@@ -3,6 +3,7 @@ Steam Deck Repo Manager — Desktop Application Launcher
 Lance le backend Python et ouvre l'interface React dans une fenêtre moderne.
 """
 
+import os
 import sys
 import time
 import threading
@@ -53,7 +54,7 @@ def launch_desktop_window(port):
     except ImportError:
         pass
 
-    # 2. Tenter d'ouvrir en mode Fenêtre Application Chrome / Edge
+    # 2. Tenter d'ouvrir en mode Fenêtre Application Chrome / Chromium / Edge
     if sys.platform == "win32":
         browser_execs = [
             Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
@@ -68,6 +69,28 @@ def launch_desktop_window(port):
                     return
                 except Exception:
                     pass
+    elif sys.platform == "darwin":
+        mac_browsers = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        ]
+        for b in mac_browsers:
+            if os.path.isfile(b):
+                try:
+                    subprocess.Popen([b, f"--app={app_url}", "--window-size=1280,840"])
+                    return
+                except Exception:
+                    pass
+    else:
+        # Linux / SteamOS
+        linux_browsers = ["google-chrome", "chromium", "chromium-browser", "brave-browser", "flatpak run com.google.Chrome"]
+        for cmd in linux_browsers:
+            try:
+                subprocess.Popen(f"{cmd} --app={app_url} --window-size=1280,840", shell=True)
+                return
+            except Exception:
+                pass
 
     # 3. Fallback navigateur par défaut
     webbrowser.open(app_url)

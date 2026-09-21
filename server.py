@@ -144,11 +144,25 @@ class SteamManager:
         if not steam_path or not os.path.isdir(steam_path):
             return {}
         base = Path(steam_path)
-        return {
+        dirs = {
             "overrides": base / "steamui" / "overrides" / "movies",
             "uioverrides": base / "config" / "uioverrides" / "movies",
             "direct": base / "steamui" / "movies"
         }
+        if sys.platform != "win32":
+            home = Path.home()
+            linux_paths = [
+                home / ".steam" / "root" / "config" / "uioverrides" / "movies",
+                home / ".steam" / "root" / "steamui" / "overrides" / "movies",
+                home / ".local" / "share" / "Steam" / "config" / "uioverrides" / "movies",
+                home / ".local" / "share" / "Steam" / "steamui" / "overrides" / "movies",
+                home / ".var" / "app" / "com.valvesoftware.Steam" / ".local" / "share" / "Steam" / "config" / "uioverrides" / "movies",
+                home / ".var" / "app" / "com.valvesoftware.Steam" / ".local" / "share" / "Steam" / "steamui" / "overrides" / "movies",
+            ]
+            for i, p in enumerate(linux_paths):
+                if p.parent.parent.exists():
+                    dirs[f"linux_target_{i}"] = p
+        return dirs
 
 
 class SteamDeckRepoAPI:

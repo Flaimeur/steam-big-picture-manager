@@ -1,4 +1,4 @@
-name: Build & Release Executable
+name: Build & Release Multiplateforme (Windows, Linux, macOS)
 
 on:
   push:
@@ -10,8 +10,22 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: SteamBigPictureManager-Windows.exe
+            sep: ';'
+          - os: ubuntu-22.04
+            artifact_name: SteamBigPictureManager-Linux
+            sep: ':'
+          - os: macos-latest
+            artifact_name: SteamBigPictureManager-macOS
+            sep: ':'
 
     steps:
       - name: Checkout repository
@@ -40,15 +54,35 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller
 
-      - name: Build Standalone Executable (.exe)
+      - name: Build Standalone Binary (Windows)
+        if: runner.os == 'Windows'
         run: |
-          python -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager" --add-data "dist;dist" run_app.py
+          python -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-Windows" --add-data "dist;dist" run_app.py
 
-      - name: Upload Binary to GitHub Release
+      - name: Build Standalone Binary (Linux / Steam Deck)
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-Linux" --add-data "dist:dist" run_app.py
+          chmod +x dist/SteamBigPictureManager-Linux
+          tar -czvf dist/SteamBigPictureManager-Linux.tar.gz -C dist SteamBigPictureManager-Linux
+
+      - name: Build Standalone Binary (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          python3 -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-macOS" --add-data "dist:dist" run_app.py
+          chmod +x dist/SteamBigPictureManager-macOS
+          zip -j dist/SteamBigPictureManager-macOS.zip dist/SteamBigPictureManager-macOS
+
+      - name: Upload Binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: dist/SteamBigPictureManager.exe
+          files: |
+            dist/SteamBigPictureManager-Windows.exe
+            dist/SteamBigPictureManager-Linux.tar.gz
+            dist/SteamBigPictureManager-Linux
+            dist/SteamBigPictureManager-macOS.zip
+            dist/SteamBigPictureManager-macOS
           name: Release ${{ github.ref_name }} - Steam Big Picture Manager
           draft: false
           prerelease: false
