@@ -370,12 +370,14 @@ export default function App() {
             setSortOption={setSortOption}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            lang={lang}
+            t={t}
             emptyMessage={
               activeTab === 'favorites'
-                ? '⭐ Aucun favori pour le moment.'
+                ? t?.emptyFavorites || '⭐ Aucun favori pour le moment.'
                 : activeTab === 'collection'
-                ? '🎬 Votre collection est vide.'
-                : 'Aucune animation trouvée.'
+                ? t?.emptyCollection || '🎬 Votre collection est vide.'
+                : t?.emptySearchResults || 'Aucune animation trouvée.'
             }
           />
         )}

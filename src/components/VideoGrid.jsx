@@ -49,6 +49,8 @@ export default function VideoGrid({
   setSortOption,
   searchQuery,
   setSearchQuery,
+  lang = 'fr',
+  t,
 }) {
   const [personalCategoryFilter, setPersonalCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -89,17 +91,17 @@ export default function VideoGrid({
   const isCatalog = activeTab === 'boot_video' || activeTab === 'suspend_video';
   const isPersonal = activeTab === 'collection' || activeTab === 'favorites';
 
-  const pageTitle = activeTab === 'boot_video' ? 'Boot Animations'
-    : activeTab === 'suspend_video' ? 'Suspend Screens'
-    : activeTab === 'favorites' ? 'Mes Favoris'
-    : activeTab === 'collection' ? 'Ma Collection'
+  const pageTitle = activeTab === 'boot_video' ? (t?.tabBoot || 'Boot Animations')
+    : activeTab === 'suspend_video' ? (t?.tabSuspend || 'Suspend Screens')
+    : activeTab === 'favorites' ? (t?.tabFavorites || 'Mes Favoris')
+    : activeTab === 'collection' ? (t?.tabCollection || 'Ma Collection')
     : 'Animations';
 
   const filterChips = [
-    { id: 'trending', label: 'Tendances', icon: Flame },
-    { id: 'likes-desc', label: 'Plus Aimés', icon: Heart },
-    { id: 'downloads-desc', label: 'Populaires', icon: Download },
-    { id: 'created_at-desc', label: 'Récents', icon: Clock },
+    { id: 'trending', label: t?.sortTrending || (lang === 'en' ? 'Trending' : 'Tendances'), icon: Flame },
+    { id: 'likes-desc', label: t?.sortTop || (lang === 'en' ? 'Top Rated' : 'Plus Aimés'), icon: Heart },
+    { id: 'downloads-desc', label: t?.sortDownloads || (lang === 'en' ? 'Popular' : 'Populaires'), icon: Download },
+    { id: 'created_at-desc', label: t?.sortNewest || (lang === 'en' ? 'Newest' : 'Récents'), icon: Clock },
   ];
 
   const bootTitle = activeStatus?.boot_title && activeStatus.boot_title !== 'Par défaut Steam' ? activeStatus.boot_title : null;
