@@ -6,6 +6,7 @@ import VideoPlayerModal from './components/VideoPlayerModal.jsx';
 import DetailModal from './components/DetailModal.jsx';
 import Toast from './components/Toast.jsx';
 import GamepadHintsBar from './components/GamepadHintsBar.jsx';
+import ImportModal from './components/ImportModal.jsx';
 import { useGamepad } from './hooks/useGamepad.js';
 import { api } from './api.js';
 import { getTranslation } from './i18n.js';
@@ -29,6 +30,7 @@ export default function App() {
 
   const [activePlayerPost, setActivePlayerPost] = useState(null);
   const [activeDetailPost, setActiveDetailPost] = useState(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
   const handleLanguageChange = (newLang) => {
@@ -224,6 +226,21 @@ export default function App() {
       showToast(`✔ '${title}' supprimé.`);
     } catch (err) {
       showToast(err.message || 'Erreur de suppression', 'error');
+    }
+  };
+
+  const handleImportCustomVideo = async (payload) => {
+    try {
+      const res = await api.importCustomVideo(payload);
+      await refreshCollection();
+      showToast(
+        t?.importSuccess
+          ? t.importSuccess.replace('{title}', payload.title)
+          : `✔ '${payload.title}' importée avec succès !`
+      );
+      return res;
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -513,6 +530,7 @@ export default function App() {
             onToggleFavorite={handleToggleFavorite}
             onDelete={handleDeleteFromCollection}
             onPickRandom={handlePickRandom}
+            onOpenImport={() => setIsImportModalOpen(true)}
             page={page}
             onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
             onNextPage={() => setPage((p) => p + 1)}
@@ -550,6 +568,15 @@ export default function App() {
       />
 
       {/* Modals */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={handleImportCustomVideo}
+        showToast={showToast}
+        t={t}
+        lang={lang}
+      />
+
       <VideoPlayerModal
         post={activePlayerPost}
         isOpen={Boolean(activePlayerPost)}

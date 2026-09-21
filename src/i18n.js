@@ -89,6 +89,19 @@ export const translations = {
     gamepadTabs: "Onglets",
     gamepadConnected: "Manette connectée",
     gamepadDisconnected: "Manette déconnectée",
+
+    // Custom Video Importer
+    importCustom: "Importer une vidéo",
+    importTitle: "Convertisseur & Importateur Vidéo",
+    importDesc: "Glissez n'importe quelle vidéo personnelle (.mp4, .mov, .mkv, .webm, .gif) pour la convertir au format optimal Steam Big Picture.",
+    importSelectFile: "Parcourir les fichiers",
+    importVideoTitle: "Nom de l'animation",
+    importType: "Type d'animation",
+    importConverting: "Conversion et optimisation en cours...",
+    importSuccess: "✔ Animation '{title}' importée avec succès !",
+    importError: "Erreur lors de la conversion de la vidéo.",
+    dragDropHere: "Glissez une vidéo ici ou cliquez pour parcourir",
+    supportsFormat: "Formats supportés : MP4, MOV, MKV, WebM, GIF, AVI (max 150 Mo)",
   },
 
   en: {
@@ -179,6 +192,19 @@ export const translations = {
     gamepadTabs: "Tabs",
     gamepadConnected: "Gamepad connected",
     gamepadDisconnected: "Gamepad disconnected",
+
+    // Custom Video Importer
+    importCustom: "Import Video",
+    importTitle: "Custom Video Converter & Importer",
+    importDesc: "Drag and drop any personal video (.mp4, .mov, .mkv, .webm, .gif) to convert to optimal Steam Big Picture format.",
+    importSelectFile: "Browse Files",
+    importVideoTitle: "Animation Title",
+    importType: "Animation Target",
+    importConverting: "Converting and optimizing video...",
+    importSuccess: "✔ Animation '{title}' imported successfully!",
+    importError: "Error converting and importing video.",
+    dragDropHere: "Drop your video here or click to browse",
+    supportsFormat: "Supported formats: MP4, MOV, MKV, WebM, GIF, AVI (max 150 MB)",
   }
 };
 

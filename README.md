@@ -36,6 +36,11 @@ Une application de bureau ultra-moderne, réactive et fluide pour parcourir, té
   - Raccourcis physiques : `(A)` Sélectionner/Lire, `(B)` Retour/Fermer, `(X)` Favori, `(Y)` Appliquer à Steam, `(LB/RB)` Navigation par onglets.
   - Barre d'aide manette HUD contextuelle en bas de l'écran.
 
+- **🎥 Importateur & Convertisseur Vidéo Local (Custom Video Importer)** :
+  - Glissez-déposez n'importe quel fichier personnel (`.mp4`, `.mov`, `.mkv`, `.avi`, `.webm`, `.gif`) directement dans l'onglet **Ma Collection**.
+  - Encodage et optimisation automatique en `.webm` (codec VP9 / VP8 + audio Opus) adapté à Steam Big Picture et Steam Deck.
+  - Extraction automatique de la miniature et intégration instantanée dans votre collection locale.
+
 - **🌐 Support Multilingue (Français & English)** :
   - Interface entièrement commutable entre Français et Anglais depuis les paramètres.
   - Sauvegarde instantanée de la langue préférée.
