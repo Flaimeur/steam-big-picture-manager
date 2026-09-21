@@ -1158,25 +1158,30 @@ def start_server(port=5055, on_ready_callback=None):
         except Exception as e:
             print(f"[SHUFFLE] Erreur rotation au démarrage: {e}")
 
-    # Surveillance de présence : arrêt automatique du backend quand l'interface est fermée
-    def _run_heartbeat_watchdog():
-        time.sleep(2.0)
-        start_time = time.time()
-        while True:
-            time.sleep(1.0)
-            now = time.time()
-            if HAS_RECEIVED_HEARTBEAT:
-                # Si le client connecté ne répond plus depuis plus de 4.5 secondes
-                if now - LAST_HEARTBEAT_TIME > 4.5:
-                    print("[WATCHDOG] Interface fermée. Arrêt propre du serveur.")
-                    os._exit(0)
-            else:
-                # Période de grâce au démarrage (30 secondes)
-                if now - start_time > 30.0:
-                    print("[WATCHDOG] Aucun client connecté après 30s. Arrêt du serveur.")
-                    os._exit(0)
+    # Surveillance de présence : arrêt automatique du backend quand l'interface est fermée (désactivable avec --no-watchdog ou --dev)
+    enable_watchdog = "--no-watchdog" not in sys.argv and "--dev" not in sys.argv
 
-    threading.Thread(target=_run_heartbeat_watchdog, daemon=True).start()
+    if enable_watchdog:
+        def _run_heartbeat_watchdog():
+            time.sleep(2.0)
+            start_time = time.time()
+            while True:
+                time.sleep(1.0)
+                now = time.time()
+                if HAS_RECEIVED_HEARTBEAT:
+                    # Si le client connecté ne répond plus depuis plus de 4.5 secondes
+                    if now - LAST_HEARTBEAT_TIME > 4.5:
+                        print("[WATCHDOG] Interface fermée. Arrêt propre du serveur.")
+                        os._exit(0)
+                else:
+                    # Période de grâce au démarrage (60 secondes)
+                    if now - start_time > 60.0:
+                        print("[WATCHDOG] Aucun client connecté après 60s. Arrêt du serveur.")
+                        os._exit(0)
+
+        threading.Thread(target=_run_heartbeat_watchdog, daemon=True).start()
+    else:
+        print("[SERVER] Watchdog désactivé (Mode Développeur / Navigateur autonome).")
 
     with httpd:
         httpd.serve_forever()
@@ -1184,7 +1189,9 @@ def start_server(port=5055, on_ready_callback=None):
 
 if __name__ == "__main__":
     port = 5055
-    if len(sys.argv) > 1 and sys.argv[1].isdigit():
-        port = int(sys.argv[1])
+    for arg in sys.argv[1:]:
+        if arg.isdigit():
+            port = int(arg)
     start_server(port)
+
 
