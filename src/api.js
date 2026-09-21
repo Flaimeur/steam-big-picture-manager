@@ -49,6 +49,17 @@ export const api = {
   // Collection locale
   getCollection: () => fetchApi('/collection'),
   downloadToCollection: (post) => fetchApi('/collection/download', { method: 'POST', body: JSON.stringify(post) }),
+  importCustomVideo: ({ title, type, filename, dataBase64, filePath }) =>
+    fetchApi('/collection/import-custom', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        type,
+        filename,
+        data_base64: dataBase64,
+        file_path: filePath,
+      }),
+    }),
   removeFromCollection: (id) => fetchApi(`/collection/${id}`, { method: 'DELETE' }),
 
   // Favoris

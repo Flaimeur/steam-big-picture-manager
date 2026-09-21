@@ -5,6 +5,9 @@ import SettingsView from './components/SettingsView.jsx';
 import VideoPlayerModal from './components/VideoPlayerModal.jsx';
 import DetailModal from './components/DetailModal.jsx';
 import Toast from './components/Toast.jsx';
+import GamepadHintsBar from './components/GamepadHintsBar.jsx';
+import ImportModal from './components/ImportModal.jsx';
+import { useGamepad } from './hooks/useGamepad.js';
 import { api } from './api.js';
 import { getTranslation } from './i18n.js';
 
@@ -27,6 +30,7 @@ export default function App() {
 
   const [activePlayerPost, setActivePlayerPost] = useState(null);
   const [activeDetailPost, setActiveDetailPost] = useState(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
   const handleLanguageChange = (newLang) => {
@@ -225,6 +229,21 @@ export default function App() {
     }
   };
 
+  const handleImportCustomVideo = async (payload) => {
+    try {
+      const res = await api.importCustomVideo(payload);
+      await refreshCollection();
+      showToast(
+        t?.importSuccess
+          ? t.importSuccess.replace('{title}', payload.title)
+          : `✔ '${payload.title}' importée avec succès !`
+      );
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const handlePickRandom = async (params = {}) => {
     try {
       const res = await api.pickRandom(params);
@@ -310,6 +329,10 @@ export default function App() {
     }
   };
 
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
+  const allTabs = ['boot_video', 'suspend_video', 'collection', 'favorites', 'settings'];
+
   const getDisplayedItems = () => {
     if (activeTab === 'favorites') {
       const items = Object.values(favorites);
@@ -325,6 +348,130 @@ export default function App() {
   };
 
   const displayedItems = getDisplayedItems();
+
+  // Reset focus index when switching tabs
+  useEffect(() => {
+    setFocusedIndex(0);
+  }, [activeTab, page]);
+
+  // Gamepad Directional Navigation
+  const handleGamepadNavigate = useCallback((direction) => {
+    if (activePlayerPost || activeDetailPost) return;
+    const count = displayedItems.length;
+    if (count === 0) return;
+
+    setFocusedIndex((prev) => {
+      const cols = window.innerWidth >= 1024 ? 4 : window.innerWidth >= 768 ? 3 : 2;
+      let next = prev === null ? 0 : prev;
+
+      if (direction === 'right') {
+        next = Math.min(count - 1, next + 1);
+      } else if (direction === 'left') {
+        next = Math.max(0, next - 1);
+      } else if (direction === 'down') {
+        next = Math.min(count - 1, next + cols);
+      } else if (direction === 'up') {
+        next = Math.max(0, next - cols);
+      }
+      return next;
+    });
+  }, [activePlayerPost, activeDetailPost, displayedItems.length]);
+
+  // Gamepad Button A (Select / Open / Play)
+  const handleButtonA = useCallback(() => {
+    if (activePlayerPost) return;
+    if (activeDetailPost) {
+      const post = activeDetailPost;
+      setActiveDetailPost(null);
+      setActivePlayerPost(post);
+      return;
+    }
+    const currentPost = displayedItems[focusedIndex];
+    if (currentPost) {
+      setActiveDetailPost(currentPost);
+    }
+  }, [activePlayerPost, activeDetailPost, displayedItems, focusedIndex]);
+
+  // Gamepad Button B (Back / Close Modal)
+  const handleButtonB = useCallback(() => {
+    if (activePlayerPost) {
+      setActivePlayerPost(null);
+      return;
+    }
+    if (activeDetailPost) {
+      setActiveDetailPost(null);
+      return;
+    }
+    if (activeTab === 'settings') {
+      setActiveTab('boot_video');
+      setFocusedIndex(0);
+    }
+  }, [activePlayerPost, activeDetailPost, activeTab]);
+
+  // Gamepad Button X (Toggle Favorite)
+  const handleButtonX = useCallback(() => {
+    const post = activePlayerPost || activeDetailPost || displayedItems[focusedIndex];
+    if (post) {
+      handleToggleFavorite(post);
+    }
+  }, [activePlayerPost, activeDetailPost, displayedItems, focusedIndex, handleToggleFavorite]);
+
+  // Gamepad Button Y (Quick Apply to Steam or Download)
+  const handleButtonY = useCallback(() => {
+    const post = activePlayerPost || activeDetailPost || displayedItems[focusedIndex];
+    if (post) {
+      const postId = String(post.id || post.vid_id || '');
+      const isInCol = Boolean(collection[postId]);
+      if (isInCol) {
+        handleApply(post);
+      } else {
+        handleDownload(post);
+      }
+    }
+  }, [activePlayerPost, activeDetailPost, displayedItems, focusedIndex, collection, handleApply, handleDownload]);
+
+  // Gamepad LB / RB (Tabs Switcher)
+  const handleButtonLB = useCallback(() => {
+    if (activePlayerPost || activeDetailPost) return;
+    setActiveTab((curr) => {
+      const idx = allTabs.indexOf(curr);
+      const prevIdx = idx <= 0 ? allTabs.length - 1 : idx - 1;
+      return allTabs[prevIdx];
+    });
+    setFocusedIndex(0);
+    setPage(1);
+  }, [activePlayerPost, activeDetailPost]);
+
+  const handleButtonRB = useCallback(() => {
+    if (activePlayerPost || activeDetailPost) return;
+    setActiveTab((curr) => {
+      const idx = allTabs.indexOf(curr);
+      const nextIdx = idx >= allTabs.length - 1 ? 0 : idx + 1;
+      return allTabs[nextIdx];
+    });
+    setFocusedIndex(0);
+    setPage(1);
+  }, [activePlayerPost, activeDetailPost]);
+
+  // Gamepad Start / Menu (Settings toggle)
+  const handleButtonStart = useCallback(() => {
+    if (activePlayerPost || activeDetailPost) return;
+    setActiveTab((curr) => (curr === 'settings' ? 'boot_video' : 'settings'));
+    setFocusedIndex(0);
+  }, [activePlayerPost, activeDetailPost]);
+
+  // Gamepad Hook
+  const { hasGamepad, isGamepadMode } = useGamepad({
+    onNavigate: handleGamepadNavigate,
+    onButtonA: handleButtonA,
+    onButtonB: handleButtonB,
+    onButtonX: handleButtonX,
+    onButtonY: handleButtonY,
+    onButtonLB: handleButtonLB,
+    onButtonRB: handleButtonRB,
+    onButtonStart: handleButtonStart,
+    enabled: true,
+  });
 
   return (
     <div className="flex h-screen w-screen bg-[#0d1117] text-[#f1f5f9] overflow-hidden">
@@ -346,6 +493,7 @@ export default function App() {
         autoShuffle={autoShuffle}
         lang={lang}
         t={t}
+        isGamepadMode={isGamepadMode}
       />
 
       {/* Main Content */}
@@ -382,6 +530,7 @@ export default function App() {
             onToggleFavorite={handleToggleFavorite}
             onDelete={handleDeleteFromCollection}
             onPickRandom={handlePickRandom}
+            onOpenImport={() => setIsImportModalOpen(true)}
             page={page}
             onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
             onNextPage={() => setPage((p) => p + 1)}
@@ -397,6 +546,8 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             lang={lang}
             t={t}
+            focusedIndex={focusedIndex}
+            isGamepadMode={isGamepadMode}
             emptyMessage={
               activeTab === 'favorites'
                 ? t?.emptyFavorites || '⭐ Aucun favori pour le moment.'
@@ -408,7 +559,24 @@ export default function App() {
         )}
       </main>
 
+      {/* Controller HUD Bar */}
+      <GamepadHintsBar
+        context={activePlayerPost ? 'player' : activeDetailPost ? 'modal' : 'grid'}
+        t={t}
+        isGamepadMode={isGamepadMode}
+        isVisible={hasGamepad}
+      />
+
       {/* Modals */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={handleImportCustomVideo}
+        showToast={showToast}
+        t={t}
+        lang={lang}
+      />
+
       <VideoPlayerModal
         post={activePlayerPost}
         isOpen={Boolean(activePlayerPost)}

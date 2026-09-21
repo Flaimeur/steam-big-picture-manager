@@ -28,6 +28,7 @@ export default function Sidebar({
   autoShuffle,
   lang = 'fr',
   t,
+  isGamepadMode = false,
 }) {
   const libraryLinks = [
     { id: 'boot_video', label: t?.tabBoot || (lang === 'en' ? 'Boot Videos' : 'Démarrage (Boot)'), icon: Gamepad2 },

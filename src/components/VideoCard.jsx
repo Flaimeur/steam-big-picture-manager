@@ -13,6 +13,7 @@ export default function VideoCard({
   onToggleFavorite,
   onDelete,
   isCollectionView = false,
+  isFocused = false,
 }) {
   const postId = String(post.id || post.vid_id || '');
   const title = post.title || 'Sans titre';
@@ -25,8 +26,11 @@ export default function VideoCard({
 
   return (
     <div
+      id={`video-card-${postId}`}
       className={`rounded-2xl overflow-hidden flex flex-col group select-none transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#1a9fff]/10 ${
-        isActive
+        isFocused
+          ? 'ring-2 ring-[#1a9fff] shadow-[0_0_25px_rgba(26,159,255,0.45)] scale-[1.03] z-10 bg-[#192338] border-[#1a9fff]'
+          : isActive
           ? 'bg-[#131b2e] border-2 border-emerald-500/50 shadow-lg shadow-emerald-500/15'
           : 'bg-[#161d2e] border border-[#1e293b] hover:border-[#1a9fff]/40 hover:bg-[#1a2340]'
       }`}

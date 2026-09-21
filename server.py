@@ -22,6 +22,94 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 import threading
 import ssl
+import base64
+
+def find_ffmpeg_bin() -> str:
+    """Trouve l'exécutable ffmpeg disponible sur le système."""
+    candidates = [
+        shutil.which("ffmpeg"),
+        "/opt/homebrew/bin/ffmpeg",
+        "/usr/local/bin/ffmpeg",
+        "/usr/bin/ffmpeg",
+        r"C:\ffmpeg\bin\ffmpeg.exe",
+    ]
+    for c in candidates:
+        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+            return str(c)
+    return "ffmpeg"
+
+
+def convert_video_to_steam_webm(input_file: Path, output_file: Path, thumb_file: Path) -> dict:
+    """Convertit n'importe quel fichier vidéo en .webm optimal pour Steam Big Picture / Steam Deck."""
+    ffmpeg_bin = find_ffmpeg_bin()
+
+    # 1. Conversion vidéo WebM (VP9 + Opus avec fallback VP8)
+    cmd = [
+        ffmpeg_bin,
+        "-y",
+        "-i", str(input_file),
+        "-c:v", "libvpx-vp9",
+        "-b:v", "3M",
+        "-crf", "28",
+        "-c:a", "libopus",
+        "-b:a", "128k",
+        "-threads", "4",
+        str(output_file)
+    ]
+    try:
+        res = subprocess.run(cmd, capture_output=True, timeout=120)
+        if res.returncode != 0:
+            cmd_fallback = [
+                ffmpeg_bin,
+                "-y",
+                "-i", str(input_file),
+                "-c:v", "libvpx",
+                "-b:v", "2M",
+                "-c:a", "libvorbis",
+                str(output_file)
+            ]
+            subprocess.run(cmd_fallback, capture_output=True, timeout=120)
+    except Exception as e:
+        if input_file.suffix.lower() == ".webm":
+            shutil.copy2(input_file, output_file)
+        else:
+            raise RuntimeError(f"Erreur ffmpeg: {e}")
+
+    # 2. Extraction miniature
+    try:
+        thumb_cmd = [
+            ffmpeg_bin,
+            "-y",
+            "-ss", "00:00:01",
+            "-i", str(output_file if output_file.exists() else input_file),
+            "-vframes", "1",
+            "-q:v", "2",
+            str(thumb_file)
+        ]
+        subprocess.run(thumb_cmd, capture_output=True, timeout=15)
+    except Exception:
+        pass
+
+    # 3. Récupération de la durée
+    duration = 5
+    try:
+        ffprobe_bin = shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe" or "/usr/local/bin/ffprobe"
+        if ffprobe_bin and os.path.isfile(ffprobe_bin):
+            probe_cmd = [
+                ffprobe_bin,
+                "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(output_file)
+            ]
+            p_res = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=10)
+            if p_res.returncode == 0 and p_res.stdout.strip():
+                duration = round(float(p_res.stdout.strip()))
+    except Exception:
+        pass
+
+    return {"duration": duration}
+
 
 def get_ssl_context():
     """Crée un contexte SSL sécurisé avec fallback automatique sur macOS/Linux."""
@@ -623,6 +711,67 @@ class AppBackendHandler(BaseHTTPRequestHandler):
                     "likes": body.get("likes", 0),
                 }
                 self._write_json(self.collection_file, col)
+                self._send_json({"success": True, "item": col[post_id]})
+            except Exception as e:
+                self._send_json({"error": str(e)}, 500)
+            return
+
+        # API: Import Custom Video with conversion
+        elif path == "/api/collection/import-custom":
+            title = body.get("title") or "Animation Personnalisée"
+            vtype = body.get("type", "boot_video")
+            data_base64 = body.get("data_base64", "")
+            local_input_path = body.get("file_path", "")
+            orig_filename = body.get("filename", "video.mp4")
+
+            post_id = f"custom_{int(datetime.datetime.now().timestamp())}"
+            dest_file = self.collection_dir / f"vid_{post_id}.webm"
+            thumb_file = self.cache_dir / f"thumb_{post_id}.jpg"
+
+            try:
+                # 1. Sauvegarde du fichier source
+                if local_input_path and os.path.isfile(local_input_path):
+                    temp_input = Path(local_input_path)
+                elif data_base64:
+                    if "," in data_base64:
+                        data_base64 = data_base64.split(",", 1)[1]
+                    raw_bytes = base64.b64decode(data_base64)
+                    temp_input = self.cache_dir / f"temp_{post_id}_{orig_filename}"
+                    with open(temp_input, "wb") as f:
+                        f.write(raw_bytes)
+                else:
+                    self._send_json({"error": "Aucun fichier vidéo fourni"}, 400)
+                    return
+
+                # 2. Conversion ffmpeg vers format WebM optimal
+                meta = convert_video_to_steam_webm(temp_input, dest_file, thumb_file)
+
+                # 3. Miniature générée
+                thumb_url = f"/media/local?path={urllib.parse.quote(str(thumb_file))}" if thumb_file.exists() else ""
+
+                # 4. Enregistrement dans collection.json
+                col = self._read_json(self.collection_file)
+                col[post_id] = {
+                    "id": post_id,
+                    "title": title,
+                    "thumbnail": thumb_url,
+                    "local_file": str(dest_file),
+                    "duration": meta.get("duration", 5),
+                    "type": vtype,
+                    "user": {"steam_name": "Import Personnalisé"},
+                    "downloads": 1,
+                    "likes": 1,
+                    "is_custom": True,
+                }
+                self._write_json(self.collection_file, col)
+
+                # Nettoyer fichier temporaire
+                if temp_input.exists() and temp_input != dest_file and "temp_" in temp_input.name:
+                    try:
+                        temp_input.unlink()
+                    except Exception:
+                        pass
+
                 self._send_json({"success": True, "item": col[post_id]})
             except Exception as e:
                 self._send_json({"error": str(e)}, 500)

@@ -20,6 +20,7 @@ import {
   Filter,
   Tag,
   Sparkles,
+  UploadCloud,
 } from 'lucide-react';
 
 export default function VideoGrid({
@@ -35,6 +36,7 @@ export default function VideoGrid({
   onToggleFavorite,
   onDelete,
   onPickRandom,
+  onOpenImport,
   page = 1,
   onPrevPage,
   onNextPage,
@@ -51,6 +53,8 @@ export default function VideoGrid({
   setSearchQuery,
   lang = 'fr',
   t,
+  focusedIndex = null,
+  isGamepadMode = false,
 }) {
   const [personalCategoryFilter, setPersonalCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,6 +81,16 @@ export default function VideoGrid({
   React.useEffect(() => {
     setInputPage(String(page));
   }, [page]);
+
+  React.useEffect(() => {
+    if (isGamepadMode && focusedIndex !== null && filteredPosts[focusedIndex]) {
+      const postId = String(filteredPosts[focusedIndex].id || filteredPosts[focusedIndex].vid_id);
+      const el = document.getElementById(`video-card-${postId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, [focusedIndex, isGamepadMode, filteredPosts]);
 
   const handlePageSubmit = (e) => {
     if (e) e.preventDefault();
@@ -224,6 +238,17 @@ export default function VideoGrid({
                   <span>Suspend</span>
                 </button>
               </div>
+
+              {/* Bouton Importer une vidéo (uniquement dans Ma Collection) */}
+              {activeTab === 'collection' && onOpenImport && (
+                <button
+                  onClick={onOpenImport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/35 hover:scale-[1.02] transition-all active:scale-95"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>{t?.importCustom || 'Importer une vidéo'}</span>
+                </button>
+              )}
 
               {/* Tirage Aléatoire button (uniquement dans Ma Collection) */}
               {activeTab === 'collection' && onPickRandom && (
@@ -418,13 +443,22 @@ export default function VideoGrid({
             </h3>
             <p className="text-[13px] text-[#546380] max-w-sm mb-6 font-medium leading-relaxed">
               {isCollectionView
-                ? "Téléchargez des animations depuis Boot Videos ou Suspend Videos pour les retrouver ici."
+                ? "Téléchargez des animations depuis Boot Videos ou importez vos propres fichiers vidéo."
                 : "Essayez avec d'autres mots-clés ou modifiez les filtres de tri."}
             </p>
+            {isCollectionView && onOpenImport && (
+              <button
+                onClick={onOpenImport}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:scale-105 transition-all"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>{t?.importCustom || 'Importer une vidéo'}</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {filteredPosts.map((post) => {
+            {filteredPosts.map((post, idx) => {
               const postId = String(post.id || post.vid_id);
               const isInCol = Boolean(collection[postId]);
               const isBootActive = activeStatus?.boot_id === postId || activeStatus?.boot_title === post.title;
@@ -445,6 +479,7 @@ export default function VideoGrid({
                   onToggleFavorite={onToggleFavorite}
                   onDelete={onDelete}
                   isCollectionView={isCollectionView}
+                  isFocused={isGamepadMode && focusedIndex === idx}
                 />
               );
             })}
