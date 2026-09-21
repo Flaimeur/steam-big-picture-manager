@@ -1,4 +1,5 @@
-customtkinter>=6.0.0
-tkinterdnd2>=0.6.3
-pillow>=10.0.0
+# Dépendances de compilation et d'exécution
 pyinstaller>=6.0.0
+
+# Optionnel (pour encapsulation de fenêtre bureau native sans navigateur externe) :
+# pywebview>=5.0.0
