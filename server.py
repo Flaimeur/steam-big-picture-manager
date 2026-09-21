@@ -5,6 +5,7 @@ Sert les API REST pour la gestion Steam & le frontend React moderne.
 
 import os
 import sys
+import time
 import json
 import shutil
 import stat
@@ -17,7 +18,7 @@ import urllib.error
 import webbrowser
 import subprocess
 from pathlib import Path
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 import threading
 
@@ -202,13 +203,17 @@ class SteamDeckRepoAPI:
         return {}
 
 
-class AppBackendHandler(SimpleHTTPRequestHandler):
+class AppBackendHandler(BaseHTTPRequestHandler):
     appdata_dir = get_app_storage_dir()
     collection_dir = appdata_dir / "collection"
     cache_dir = appdata_dir / "cache"
     collection_file = appdata_dir / "collection.json"
     favorites_file = appdata_dir / "favorites.json"
     settings_file = appdata_dir / "settings.json"
+
+    def log_message(self, format, *args):
+        """Silencie les logs stderr pour eviter les crashs en mode --noconsole sous Windows."""
+        pass
 
     @classmethod
     def get_active_dist_dir(cls) -> Path:
@@ -806,7 +811,7 @@ class AppBackendHandler(SimpleHTTPRequestHandler):
         self.send_error(404, "Endpoint introuvable")
 
 
-class ReusableTCPServer(socketserver.TCPServer):
+class ReusableTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
 
@@ -814,26 +819,12 @@ class ReusableTCPServer(socketserver.TCPServer):
 def start_server(port=5055, on_ready_callback=None):
     AppBackendHandler.initialize_backend()
 
-    # Si auto-shuffle actif au démarrage, exécuter la rotation
-    try:
-        settings = AppBackendHandler._read_json(AppBackendHandler.settings_file)
-        if settings.get("auto_shuffle_startup"):
-            source = settings.get("shuffle_source", "all")
-            target = settings.get("shuffle_target", "boot")
-            print(f"[SHUFFLE] Rotation automatique au démarrage (Source: {source}, Cible: {target})...")
-            AppBackendHandler.perform_random_shuffle(source=source, target=target)
-    except Exception as e:
-        print(f"[SHUFFLE] Erreur rotation au démarrage: {e}")
-
-    dist_dir = get_bundle_dir() / "dist"
-    handler = lambda *args, **kwargs: AppBackendHandler(*args, directory=str(dist_dir), **kwargs)
-
     bound_port = port
     httpd = None
 
     for p in range(port, port + 20):
         try:
-            httpd = ReusableTCPServer(("127.0.0.1", p), handler)
+            httpd = ReusableTCPServer(("127.0.0.1", p), AppBackendHandler)
             bound_port = p
             break
         except OSError:
@@ -850,6 +841,21 @@ def start_server(port=5055, on_ready_callback=None):
             on_ready_callback(bound_port)
         except Exception as e:
             print(f"[SERVER] Callback error: {e}")
+
+    # Lancer la rotation automatique en tâche de fond pour que le serveur HTTP réponde instantanément
+    def _run_bg_shuffle():
+        try:
+            time.sleep(0.5)
+            settings = AppBackendHandler._read_json(AppBackendHandler.settings_file)
+            if settings.get("auto_shuffle_startup"):
+                source = settings.get("shuffle_source", "all")
+                target = settings.get("shuffle_target", "boot")
+                print(f"[SHUFFLE] Rotation automatique au démarrage (Source: {source}, Cible: {target})...")
+                AppBackendHandler.perform_random_shuffle(source=source, target=target)
+        except Exception as e:
+            print(f"[SHUFFLE] Erreur rotation au démarrage: {e}")
+
+    threading.Thread(target=_run_bg_shuffle, daemon=True).start()
 
     with httpd:
         httpd.serve_forever()
