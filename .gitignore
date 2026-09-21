@@ -1,0 +1,30 @@
+# Environnements virtuels et caches Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Fichiers de configuration & métadonnées locales (AGENTS.md)
+.github-target.md
+.git-config-local.md
+.env
+.env.local
+*.log
+
+# Dossiers de build et packages
+dist/
+build/
+*.spec
+node_modules/
+
+# Données locales temporaires et caches de l'application
+thumbs/
+steam_boot_manager_data/
+
+# OS et éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
