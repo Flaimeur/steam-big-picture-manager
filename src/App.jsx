@@ -6,8 +6,11 @@ import VideoPlayerModal from './components/VideoPlayerModal.jsx';
 import DetailModal from './components/DetailModal.jsx';
 import Toast from './components/Toast.jsx';
 import { api } from './api.js';
+import { getTranslation } from './i18n.js';
 
 export default function App() {
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'fr');
+  const t = getTranslation(lang);
   const [activeTab, setActiveTab] = useState('boot_video');
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
@@ -25,6 +28,11 @@ export default function App() {
   const [activePlayerPost, setActivePlayerPost] = useState(null);
   const [activeDetailPost, setActiveDetailPost] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const handleLanguageChange = (newLang) => {
+    setLang(newLang);
+    localStorage.setItem('app_lang', newLang);
+  };
 
   const debounceTimerRef = useRef(null);
 
@@ -311,6 +319,8 @@ export default function App() {
         onRestoreDefault={handleRestoreDefault}
         onToggleShuffle={handleToggleShuffle}
         autoShuffle={autoShuffle}
+        lang={lang}
+        t={t}
       />
 
       {/* Main Content */}
@@ -329,6 +339,9 @@ export default function App() {
               favCount: Object.keys(favorites).length,
               colCount: Object.keys(collection).length,
             }}
+            lang={lang}
+            onLanguageChange={handleLanguageChange}
+            t={t}
           />
         ) : (
           <VideoGrid

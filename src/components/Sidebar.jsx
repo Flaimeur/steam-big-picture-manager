@@ -26,15 +26,17 @@ export default function Sidebar({
   onRestoreDefault,
   onToggleShuffle,
   autoShuffle,
+  lang = 'fr',
+  t,
 }) {
   const libraryLinks = [
-    { id: 'boot_video', label: 'Boot Videos', icon: Gamepad2 },
-    { id: 'suspend_video', label: 'Suspend Videos', icon: PauseCircle },
+    { id: 'boot_video', label: t?.tabBoot || (lang === 'en' ? 'Boot Videos' : 'Démarrage (Boot)'), icon: Gamepad2 },
+    { id: 'suspend_video', label: t?.tabSuspend || (lang === 'en' ? 'Suspend Videos' : 'Mise en veille'), icon: PauseCircle },
   ];
 
   const personalLinks = [
-    { id: 'collection', label: 'Ma Collection', icon: Film, count: stats?.colCount },
-    { id: 'favorites', label: 'Mes Favoris', icon: Star, count: stats?.favCount },
+    { id: 'collection', label: t?.tabCollection || (lang === 'en' ? 'My Collection' : 'Ma Collection'), icon: Film, count: stats?.colCount },
+    { id: 'favorites', label: t?.tabFavorites || (lang === 'en' ? 'My Favorites' : 'Mes Favoris'), icon: Star, count: stats?.favCount },
   ];
 
   const NavItem = ({ id, label, icon: Icon, count, onClick }) => {
@@ -126,7 +128,7 @@ export default function Sidebar({
       <div className="px-3 pb-5 space-y-2">
         <div className="h-px bg-gradient-to-r from-transparent via-[#1e293b] to-transparent mx-1 mb-2" />
 
-        <NavItem id="settings" label="Options" icon={Settings} />
+        <NavItem id="settings" label={t?.tabSettings || (lang === 'en' ? 'Settings' : 'Paramètres')} icon={Settings} />
 
         <button
           onClick={onSelectSteam}
@@ -141,7 +143,7 @@ export default function Sidebar({
           ) : (
             <AlertCircle className="w-4 h-4" />
           )}
-          <span>{steamStatus?.detected ? 'Steam Lié' : 'Lier Steam'}</span>
+          <span>{steamStatus?.detected ? (lang === 'en' ? 'Steam Linked' : 'Steam Lié') : (lang === 'en' ? 'Link Steam' : 'Lier Steam')}</span>
         </button>
 
         <button

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   Info,
+  Languages,
 } from 'lucide-react';
 
 export default function SettingsView({
@@ -25,6 +26,9 @@ export default function SettingsView({
   autoShuffle,
   onLaunchBigPicture,
   stats,
+  lang = 'fr',
+  onLanguageChange,
+  t,
 }) {
   const [customPathInput, setCustomPathInput] = useState('');
   const [isEditingPath, setIsEditingPath] = useState(false);
@@ -55,9 +59,50 @@ export default function SettingsView({
                 Options & Dossiers Locaux
               </h1>
               <p className="text-xs text-[#546380] font-medium mt-0.5">
-                Gérez vos répertoires Steam, l'emplacement de vos vidéos locales et les comportements système.
+                {lang === 'en'
+                  ? 'Manage your Steam paths, local videos storage and system behaviors.'
+                  : "Gérez vos répertoires Steam, l'emplacement de vos vidéos locales et les comportements système."}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Section 0: Langue de l'interface (Language) */}
+        <div className="rounded-2xl bg-[#131929] border border-[#1e293b] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+              <Languages className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-white block">
+                {lang === 'en' ? 'Interface Language' : "Langue de l'interface"}
+              </span>
+              <span className="text-xs text-[#546380]">
+                {lang === 'en' ? 'Select your preferred language (French / English)' : 'Sélectionnez votre langue préférée (Français / Anglais)'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onLanguageChange && onLanguageChange('fr')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                lang === 'fr'
+                  ? 'bg-[#1a9fff]/20 text-[#38bdf8] border-[#1a9fff]/50 shadow-md shadow-[#1a9fff]/20'
+                  : 'bg-[#0e1320] text-[#64748b] border-[#1e293b] hover:text-white'
+              }`}
+            >
+              <span>🇫🇷 Français</span>
+            </button>
+            <button
+              onClick={() => onLanguageChange && onLanguageChange('en')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                lang === 'en'
+                  ? 'bg-[#1a9fff]/20 text-[#38bdf8] border-[#1a9fff]/50 shadow-md shadow-[#1a9fff]/20'
+                  : 'bg-[#0e1320] text-[#64748b] border-[#1e293b] hover:text-white'
+              }`}
+            >
+              <span>🇬🇧 English</span>
+            </button>
           </div>
         </div>
 
