@@ -78,6 +78,37 @@ export default function VideoGrid({
     { id: 'Meme', label: 'Memes & Drôle', icon: '🐸' },
   ];
 
+  const isCatalog = activeTab === 'boot_video' || activeTab === 'suspend_video';
+  const isPersonal = activeTab === 'collection' || activeTab === 'favorites';
+
+  const bootTitle = activeStatus?.boot_title && activeStatus.boot_title !== 'Par défaut Steam' ? activeStatus.boot_title : null;
+  const suspendTitle = activeStatus?.suspend_title && activeStatus.suspend_title !== 'Par défaut Steam' ? activeStatus.suspend_title : null;
+
+  // Filter personal items if in collection or favorites
+  const filteredPosts = React.useMemo(() => {
+    let result = isPersonal
+      ? posts.filter((item) => {
+          if (personalCategoryFilter === 'all') return true;
+          const itemType = item.type || 'boot_video';
+          return itemType === personalCategoryFilter;
+        })
+      : posts;
+
+    if (statusFilter !== 'all') {
+      result = result.filter((item) => {
+        const postId = String(item.id || item.vid_id || '');
+        if (statusFilter === 'favorites') return isFavorite ? isFavorite(postId) : false;
+        if (statusFilter === 'installed') return Boolean(collection[postId]);
+        if (statusFilter === 'short') {
+          const dur = item.video_duration || item.duration || 0;
+          return dur > 0 && dur <= 10;
+        }
+        return true;
+      });
+    }
+    return result;
+  }, [posts, isPersonal, personalCategoryFilter, statusFilter, isFavorite, collection]);
+
   React.useEffect(() => {
     setInputPage(String(page));
   }, [page]);
@@ -102,9 +133,6 @@ export default function VideoGrid({
     }
   };
 
-  const isCatalog = activeTab === 'boot_video' || activeTab === 'suspend_video';
-  const isPersonal = activeTab === 'collection' || activeTab === 'favorites';
-
   const pageTitle = activeTab === 'boot_video' ? (t?.tabBoot || 'Boot Animations')
     : activeTab === 'suspend_video' ? (t?.tabSuspend || 'Suspend Screens')
     : activeTab === 'favorites' ? (t?.tabFavorites || 'Mes Favoris')
@@ -117,31 +145,6 @@ export default function VideoGrid({
     { id: 'downloads-desc', label: t?.sortDownloads || (lang === 'en' ? 'Popular' : 'Populaires'), icon: Download },
     { id: 'created_at-desc', label: t?.sortNewest || (lang === 'en' ? 'Newest' : 'Récents'), icon: Clock },
   ];
-
-  const bootTitle = activeStatus?.boot_title && activeStatus.boot_title !== 'Par défaut Steam' ? activeStatus.boot_title : null;
-  const suspendTitle = activeStatus?.suspend_title && activeStatus.suspend_title !== 'Par défaut Steam' ? activeStatus.suspend_title : null;
-
-  // Filter personal items if in collection or favorites
-  let filteredPosts = isPersonal
-    ? posts.filter((item) => {
-        if (personalCategoryFilter === 'all') return true;
-        const itemType = item.type || 'boot_video';
-        return itemType === personalCategoryFilter;
-      })
-    : posts;
-
-  if (statusFilter !== 'all') {
-    filteredPosts = filteredPosts.filter((item) => {
-      const postId = String(item.id || item.vid_id || '');
-      if (statusFilter === 'favorites') return isFavorite ? isFavorite(postId) : false;
-      if (statusFilter === 'installed') return Boolean(collection[postId]);
-      if (statusFilter === 'short') {
-        const dur = item.video_duration || item.duration || 0;
-        return dur > 0 && dur <= 10;
-      }
-      return true;
-    });
-  }
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#0e131f] h-full">

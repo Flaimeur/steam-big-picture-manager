@@ -696,11 +696,13 @@ class AppBackendHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/shutdown":
-            self._send_json({"shutting_down": True})
-            def _exit_bg():
-                time.sleep(0.15)
-                os._exit(0)
-            threading.Thread(target=_exit_bg, daemon=True).start()
+            enable_watchdog = "--no-watchdog" not in sys.argv and "--dev" not in sys.argv
+            self._send_json({"shutting_down": enable_watchdog})
+            if enable_watchdog:
+                def _exit_bg():
+                    time.sleep(0.15)
+                    os._exit(0)
+                threading.Thread(target=_exit_bg, daemon=True).start()
             return
 
         # API: Download to collection
