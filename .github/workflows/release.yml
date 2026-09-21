@@ -77,13 +77,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            dist/SteamBigPictureManager-Windows.exe
-            dist/SteamBigPictureManager-Linux.tar.gz
-            dist/SteamBigPictureManager-Linux
-            dist/SteamBigPictureManager-macOS.zip
-            dist/SteamBigPictureManager-macOS
+          files: dist/SteamBigPictureManager*
+          fail_on_unmatched_files: false
           name: Release ${{ github.ref_name }} - Steam Big Picture Manager
           draft: false
           prerelease: false
           generate_release_notes: true
+
