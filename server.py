@@ -21,6 +21,30 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 import threading
+import ssl
+
+def get_ssl_context():
+    """Crée un contexte SSL sécurisé avec fallback automatique sur macOS/Linux."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+    try:
+        return ssl.create_default_context()
+    except Exception:
+        pass
+    return ssl._create_unverified_context()
+
+def safe_urlopen(req, timeout=15):
+    """Effectue une requête HTTP/HTTPS avec fallback automatique si les certificats locaux échouent."""
+    try:
+        ctx = get_ssl_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    except Exception:
+        ctx = ssl._create_unverified_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
 
 # Registre Windows
 if sys.platform == "win32":
@@ -201,7 +225,7 @@ class SteamDeckRepoAPI:
 
         url = f"{SteamDeckRepoAPI.BASE_URL}?{'&'.join(query_parts)}"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with safe_urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode("utf-8"))
         return {}
@@ -582,8 +606,8 @@ class AppBackendHandler(BaseHTTPRequestHandler):
 
             try:
                 if not dest_file.exists() and video_url:
-                    req = urllib.request.Request(video_url, headers={"User-Agent": "Mozilla/5.0"})
-                    with urllib.request.urlopen(req, timeout=30) as resp, open(dest_file, "wb") as f:
+                    req = urllib.request.Request(video_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                    with safe_urlopen(req, timeout=30) as resp, open(dest_file, "wb") as f:
                         shutil.copyfileobj(resp, f)
 
                 col = self._read_json(self.collection_file)

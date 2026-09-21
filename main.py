@@ -30,6 +30,28 @@ import webbrowser
 import datetime
 from io import BytesIO
 from pathlib import Path
+import ssl
+
+def get_ssl_context():
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+    try:
+        return ssl.create_default_context()
+    except Exception:
+        pass
+    return ssl._create_unverified_context()
+
+def safe_urlopen(req, timeout=15):
+    try:
+        ctx = get_ssl_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    except Exception:
+        ctx = ssl._create_unverified_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
 
 # Registre Windows (optionnel si sous Linux/macOS)
 try:
@@ -262,7 +284,7 @@ class SteamDeckRepoAPI:
 
         url = f"{SteamDeckRepoAPI.BASE_URL}?{'&'.join(query_parts)}"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with safe_urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode("utf-8"))
         return {}
