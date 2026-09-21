@@ -27,37 +27,54 @@ Une application de bureau ultra-moderne, réactive et fluide pour parcourir, té
 
 ---
 
+## 📥 Téléchargements (Releases GitHub)
+
+Les exécutables autonomes et portables (sans installation requise) sont disponibles sur la page **[Releases GitHub](https://github.com/Flaimeur/steam-big-picture-manager/releases)** :
+
+| Plateforme | Format | Téléchargement direct |
+| :--- | :--- | :--- |
+| **🪟 Windows** | `.exe` | [SteamBigPictureManager-Windows.exe](https://github.com/Flaimeur/steam-big-picture-manager/releases/latest/download/SteamBigPictureManager-Windows.exe) |
+| **🐧 Linux / Steam Deck** | `.tar.gz` / Binaire | [SteamBigPictureManager-Linux.tar.gz](https://github.com/Flaimeur/steam-big-picture-manager/releases/latest/download/SteamBigPictureManager-Linux.tar.gz) |
+| **🍎 macOS** | `.zip` / Binaire | [SteamBigPictureManager-macOS.zip](https://github.com/Flaimeur/steam-big-picture-manager/releases/latest/download/SteamBigPictureManager-macOS.zip) |
+
+---
+
 ## 🛠️ Installation & Démarrage Rapide
 
-### 1. Prérequis
+### 🐧 Sur Linux & Steam Deck
+1. Téléchargez et extrayez l'archive `SteamBigPictureManager-Linux.tar.gz`.
+2. Rendez le binaire exécutable et lancez-le :
+   ```bash
+   chmod +x SteamBigPictureManager-Linux
+   ./SteamBigPictureManager-Linux
+   ```
+*(L'application détecte automatiquement le chemin SteamOS standard `~/.steam/root` et le Flatpak `~/.var/app/com.valvesoftware.Steam`).*
+
+### 🍎 Sur macOS
+1. Téléchargez et décompressez `SteamBigPictureManager-macOS.zip`.
+2. Lancez le binaire :
+   ```bash
+   chmod +x SteamBigPictureManager-macOS
+   ./SteamBigPictureManager-macOS
+   ```
+
+### 💻 Exécution depuis les sources (Développement)
+
+#### 1. Prérequis
 - **Node.js 18+** et **Python 3.10+**
 
-### 2. Installation des dépendances
-
+#### 2. Lancement
 ```bash
 # Installer les dépendances frontend
 npm install
-```
 
-### 3. Lancer l'application en mode bureau
-
-```bash
-# Lancement tout-en-un (Frontend React + Serveur Python + Fenêtre Bureau)
-python run_app.py
-
-# Ou sous Windows via le script rapide
+# Lancement (Windows)
 run.bat
+
+# Lancement (Linux / macOS)
+chmod +x run.sh
+./run.sh
 ```
-
-### 4. Compiler l'exécutable autonome (.exe)
-
-Pour générer un fichier `.exe` portable et autonome distribuable à tout le monde sans avoir besoin d'installer Node.js :
-
-```bash
-# Exécuter le script de packaging
-build_exe.bat
-```
-Le binaire autonome sera généré dans `dist/SteamBigPictureManager.exe`.
 
 ---
 
