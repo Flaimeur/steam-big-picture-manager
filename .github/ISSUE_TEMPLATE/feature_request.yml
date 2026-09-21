@@ -1,0 +1,33 @@
+name: "💡 Suggestion de Fonctionnalité"
+description: "Proposer une nouvelle idée, une amélioration d'interface ou un filtre supplémentaire."
+title: "[FEATURE]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vous avez une idée pour rendre Steam Big Picture Manager encore meilleur ? Dites-nous tout !
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Votre besoin / Le problème rencontré"
+      description: "Y a-t-il une frustration ou un manque actuel que cette idée résoudrait ?"
+      placeholder: "Actuellement, il n'est pas possible de..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Description de la Fonctionnalité Proposée"
+      description: "Comment imaginez-vous cette fonctionnalité ?"
+      placeholder: "Ajouter un bouton ou un nouveau filtre..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Envisagées (Optionnel)"
+      description: "Avez-vous pensé à d'autres solutions ou contournements ?"

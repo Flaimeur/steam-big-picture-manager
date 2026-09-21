@@ -1,4 +1,21 @@
-# 🎮 Steam Big Picture Manager (Édition React + Python)
+# 🎮 Steam Big Picture Manager
+
+<p align="center">
+  <a href="https://github.com/Flaimeur/steam-big-picture-manager/actions/workflows/ci.yml">
+    <img src="https://github.com/Flaimeur/steam-big-picture-manager/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </a>
+  <a href="https://github.com/Flaimeur/steam-big-picture-manager/releases">
+    <img src="https://img.shields.io/github/v/release/Flaimeur/steam-big-picture-manager?color=1a9eff&label=Version" alt="Latest Release" />
+  </a>
+  <a href="https://github.com/Flaimeur/steam-big-picture-manager/releases">
+    <img src="https://img.shields.io/github/downloads/Flaimeur/steam-big-picture-manager/total?color=10b981&label=Downloads" alt="Downloads" />
+  </a>
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20SteamOS-blueviolet" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Steam%20Deck-Compatible%20%E2%9C%85-teal" alt="Steam Deck Verified" />
+  <a href="https://github.com/Flaimeur/steam-big-picture-manager/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License: MIT" />
+  </a>
+</p>
 
 Une application de bureau ultra-moderne, réactive et fluide pour parcourir, télécharger et appliquer en 1 clic les animations de démarrage (*Boot*) et de mise en veille (*Suspend*) de **Steam Big Picture** et **Steam Deck**, avec intégration directe de **[SteamDeckRepo.com](https://steamdeckrepo.com)**.
 
@@ -49,6 +66,11 @@ Les exécutables autonomes et portables (sans installation requise) sont disponi
    ./SteamBigPictureManager-Linux
    ```
 *(L'application détecte automatiquement le chemin SteamOS standard `~/.steam/root` et le Flatpak `~/.var/app/com.valvesoftware.Steam`).*
+
+*(Optionnel) Pour ajouter un raccourci dans le menu des applications Steam Deck :*
+```bash
+cp steam-big-picture-manager.desktop ~/.local/share/applications/
+```
 
 ### 🍎 Sur macOS
 1. Téléchargez et décompressez `SteamBigPictureManager-macOS.zip`.

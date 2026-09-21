@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Steam Big Picture Manager
+Comment=Browse, download and manage custom Steam Big Picture and Steam Deck boot/suspend animations
+Exec=SteamBigPictureManager-Linux
+Icon=steam
+Terminal=false
+Type=Application
+Categories=Utility;Game;AudioVideo;
+StartupNotify=true
+Keywords=steam;deck;bigpicture;boot;video;animation;
