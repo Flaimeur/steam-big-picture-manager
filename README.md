@@ -30,16 +30,25 @@ Une application de bureau ultra-moderne, réactive et fluide pour parcourir, té
   - Pagination dynamique avec saisie directe du numéro de page.
   - Prévisualisation vidéo fluide 60 FPS avec son et fiches détaillées.
 
+- **🌐 Support Multilingue (Français & English)** :
+  - Interface entièrement commutable entre Français et Anglais depuis les paramètres.
+  - Sauvegarde instantanée de la langue préférée.
+
 - **🎲 Rotation Aléatoire Avancée (Auto-Shuffle)** :
   - Activez la rotation automatique des animations au lancement.
   - **Choix de la source** : tirez aléatoirement parmi **Toute votre collection** ou uniquement vos **Favoris**.
   - **Choix de la cible** : renouvelez le **Démarrage (Boot)**, la **Mise en veille (Suspend)**, ou **Les deux simultanément**.
   - Bouton de tirage instantané en un clic.
 
+- **🗑️ Gestion de Collection & Suppression en 1 Clic** :
+  - Téléchargement sécurisé et stockage local dans AppData / XDG.
+  - Boutons de suppression directe dans la fiche de détails et le lecteur vidéo pour nettoyer votre collection.
+
 - **⚙️ Gestion & Sécurité Système Steam** :
-  - Détection automatique et configuration manuelle du répertoire d'installation Steam.
+  - Détection automatique et configuration manuelle du répertoire d'installation Steam (Windows, SteamOS / Steam Deck, macOS, Flatpak).
   - Injection propre dans `steamui/overrides/movies` avec verrouillage anti-écrasement Steam.
   - Sauvegardes automatiques (`.backup`) et bouton de restauration d'usine en 1 clic.
+  - Chien de garde (Watchdog) : arrêt automatique du backend à la fermeture de la fenêtre pour déverrouiller immédiatement les fichiers.
   - Boutons d'accès direct aux dossiers locaux Steam et de la Collection (AppData).
 
 ---
