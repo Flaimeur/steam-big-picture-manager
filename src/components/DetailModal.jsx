@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Play, Download, Star, Check, ExternalLink, User, Heart, Clock } from 'lucide-react';
+import { X, Play, Download, Star, Check, ExternalLink, User, Heart, Clock, Trash2 } from 'lucide-react';
 
 export default function DetailModal({
   post,
@@ -11,6 +11,7 @@ export default function DetailModal({
   onDownload,
   onApply,
   onToggleFavorite,
+  onDelete,
   isFavorite,
 }) {
   if (!isOpen || !post) return null;
@@ -148,6 +149,19 @@ export default function DetailModal({
               >
                 <Download className="w-4 h-4 text-[#38bdf8]" />
                 <span>Installer</span>
+              </button>
+            )}
+
+            {isInCol && onDelete && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onDelete(postId, title);
+                }}
+                className="p-2.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 transition-all hover:scale-105"
+                title="Supprimer de la collection"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
 

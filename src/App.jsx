@@ -378,6 +378,7 @@ export default function App() {
         onDownload={handleDownload}
         onApply={handleApply}
         onToggleFavorite={handleToggleFavorite}
+        onDelete={handleDeleteFromCollection}
         isFavorite={isFavorite}
       />
 
@@ -391,6 +392,7 @@ export default function App() {
         onDownload={handleDownload}
         onApply={handleApply}
         onToggleFavorite={handleToggleFavorite}
+        onDelete={handleDeleteFromCollection}
         isFavorite={isFavorite}
       />
 

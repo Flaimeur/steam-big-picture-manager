@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, X, Star, Download, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, X, Star, Download, Check, Trash2 } from 'lucide-react';
 
 export default function VideoPlayerModal({
   post,
@@ -10,6 +10,7 @@ export default function VideoPlayerModal({
   onDownload,
   onApply,
   onToggleFavorite,
+  onDelete,
   isFavorite,
 }) {
   const videoRef = useRef(null);
@@ -184,6 +185,19 @@ export default function VideoPlayerModal({
                 <Star className={`w-4 h-4 ${fav ? 'fill-current' : ''}`} />
                 <span>{fav ? 'Favori' : 'Favoris'}</span>
               </button>
+
+              {isInCol && onDelete && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onDelete(postId, title);
+                  }}
+                  className="p-2.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 transition-all hover:scale-105"
+                  title="Supprimer de la collection"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
 
               {isActive ? (
                 <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-md">
