@@ -38,6 +38,22 @@ def get_bundle_dir() -> Path:
     return Path(__file__).parent.resolve()
 
 
+def get_dist_dir() -> Path:
+    """Résout de manière fiable le dossier contenant index.html (PyInstaller, portable, dev)."""
+    bundle = get_bundle_dir()
+    candidates = [
+        bundle / "dist",
+        bundle,
+        Path(__file__).parent / "dist",
+        Path.cwd() / "dist",
+        Path(sys.executable).parent / "dist" if getattr(sys, "frozen", False) else Path.cwd(),
+    ]
+    for c in candidates:
+        if (c / "index.html").is_file():
+            return c.resolve()
+    return (bundle / "dist").resolve()
+
+
 def get_app_storage_dir() -> Path:
     """Retourne le dossier de données de l'application selon l'OS (AppData, XDG, Library)."""
     if sys.platform == "win32":
@@ -193,7 +209,10 @@ class AppBackendHandler(SimpleHTTPRequestHandler):
     collection_file = appdata_dir / "collection.json"
     favorites_file = appdata_dir / "favorites.json"
     settings_file = appdata_dir / "settings.json"
-    dist_dir = get_bundle_dir() / "dist"
+
+    @classmethod
+    def get_active_dist_dir(cls) -> Path:
+        return get_dist_dir()
 
     @classmethod
     def initialize_backend(cls):
@@ -367,128 +386,139 @@ class AppBackendHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-        query = urllib.parse.parse_qs(parsed.query)
+        try:
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            query = urllib.parse.parse_qs(parsed.query)
 
-        # API: Status
-        if path == "/api/status":
-            settings = self._read_json(self.settings_file)
-            steam_p = settings.get("steam_path") or SteamManager.detect_steam_path()
-            self._send_json({
-                "detected": bool(steam_p and os.path.isdir(steam_p)),
-                "path": steam_p,
-                "boot_title": settings.get("active_boot_title", "Par défaut Steam"),
-                "boot_id": settings.get("active_boot_id"),
-                "suspend_title": settings.get("active_suspend_title", "Par défaut Steam"),
-                "suspend_id": settings.get("active_suspend_id"),
-                "auto_shuffle": settings.get("auto_shuffle_startup", False),
-                "shuffle_source": settings.get("shuffle_source", "all"),
-                "shuffle_target": settings.get("shuffle_target", "boot"),
-            })
-            return
+            # API: Status
+            if path == "/api/status":
+                settings = self._read_json(self.settings_file)
+                steam_p = settings.get("steam_path") or SteamManager.detect_steam_path()
+                self._send_json({
+                    "detected": bool(steam_p and os.path.isdir(steam_p)),
+                    "path": steam_p,
+                    "boot_title": settings.get("active_boot_title", "Par défaut Steam"),
+                    "boot_id": settings.get("active_boot_id"),
+                    "suspend_title": settings.get("active_suspend_title", "Par défaut Steam"),
+                    "suspend_id": settings.get("active_suspend_id"),
+                    "auto_shuffle": settings.get("auto_shuffle_startup", False),
+                    "shuffle_source": settings.get("shuffle_source", "all"),
+                    "shuffle_target": settings.get("shuffle_target", "boot"),
+                })
+                return
 
-        # API: Posts Catalogue
-        elif path == "/api/posts":
-            page = int(query.get("page", [1])[0])
-            sort = query.get("sort", ["trending"])[0]
-            search = query.get("search", [""])[0]
-            vtype = query.get("type", ["boot_video"])[0]
-            try:
-                data = SteamDeckRepoAPI.fetch_posts(page=page, sort=sort, search=search, video_type=vtype)
-                self._send_json(data)
-            except Exception as e:
-                self._send_json({"error": str(e), "posts": []}, 500)
-            return
-
-        # API: Collection
-        elif path == "/api/collection":
-            col = self._read_json(self.collection_file)
-            for k, v in col.items():
-                if isinstance(v, dict):
-                    v["id"] = v.get("id") or k
-            self._send_json(col)
-            return
-
-        # API: Favorites
-        elif path == "/api/favorites":
-            favs = self._read_json(self.favorites_file)
-            for k, v in favs.items():
-                if isinstance(v, dict):
-                    v["id"] = v.get("id") or k
-            self._send_json(favs)
-            return
-
-        # Media local stream
-        elif path == "/media/local":
-            fp = query.get("path", [""])[0]
-            if fp and os.path.isfile(fp):
+            # API: Posts Catalogue
+            elif path == "/api/posts":
+                page = int(query.get("page", [1])[0])
+                sort = query.get("sort", ["trending"])[0]
+                search = query.get("search", [""])[0]
+                vtype = query.get("type", ["boot_video"])[0]
                 try:
-                    fsize = os.path.getsize(fp)
+                    data = SteamDeckRepoAPI.fetch_posts(page=page, sort=sort, search=search, video_type=vtype)
+                    self._send_json(data)
+                except Exception as e:
+                    self._send_json({"error": str(e), "posts": []}, 500)
+                return
+
+            # API: Collection
+            elif path == "/api/collection":
+                col = self._read_json(self.collection_file)
+                for k, v in col.items():
+                    if isinstance(v, dict):
+                        v["id"] = v.get("id") or k
+                self._send_json(col)
+                return
+
+            # API: Favorites
+            elif path == "/api/favorites":
+                favs = self._read_json(self.favorites_file)
+                for k, v in favs.items():
+                    if isinstance(v, dict):
+                        v["id"] = v.get("id") or k
+                self._send_json(favs)
+                return
+
+            # Media local stream
+            elif path == "/media/local":
+                fp = query.get("path", [""])[0]
+                if fp and os.path.isfile(fp):
+                    try:
+                        fsize = os.path.getsize(fp)
+                        self.send_response(200)
+                        self.send_header("Content-Type", "video/webm")
+                        self.send_header("Content-Length", str(fsize))
+                        self.send_header("Accept-Ranges", "bytes")
+                        self.end_headers()
+                        with open(fp, "rb") as f:
+                            shutil.copyfileobj(f, self.wfile)
+                        return
+                    except Exception:
+                        pass
+                self.send_error(404, "Fichier introuvable")
+                return
+
+            # Servir les fichiers statiques de React (dist)
+            dist = self.get_active_dist_dir()
+            clean_path = path.lstrip("/").split("?")[0]
+            target_file = dist / clean_path
+            if clean_path and target_file.is_file():
+                ext = target_file.suffix.lower()
+                mime_types = {
+                    ".html": "text/html; charset=utf-8",
+                    ".js": "application/javascript; charset=utf-8",
+                    ".mjs": "application/javascript; charset=utf-8",
+                    ".css": "text/css; charset=utf-8",
+                    ".svg": "image/svg+xml",
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                    ".gif": "image/gif",
+                    ".webm": "video/webm",
+                    ".json": "application/json; charset=utf-8",
+                    ".ico": "image/x-icon",
+                    ".woff": "font/woff",
+                    ".woff2": "font/woff2",
+                    ".ttf": "font/ttf",
+                }
+                content_type = mime_types.get(ext, "application/octet-stream")
+                try:
+                    with open(target_file, "rb") as f:
+                        content = f.read()
                     self.send_response(200)
-                    self.send_header("Content-Type", "video/webm")
-                    self.send_header("Content-Length", str(fsize))
-                    self.send_header("Accept-Ranges", "bytes")
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("Content-Length", str(len(content)))
+                    self.send_header("Cache-Control", "public, max-age=31536000" if "/assets/" in path else "no-cache")
                     self.end_headers()
-                    with open(fp, "rb") as f:
-                        shutil.copyfileobj(f, self.wfile)
+                    self.wfile.write(content)
                     return
                 except Exception:
                     pass
-            self.send_error(404, "Fichier introuvable")
-            return
 
-        # Servir les fichiers statiques de React (dist)
-        clean_path = path.lstrip("/").split("?")[0]
-        target_file = self.dist_dir / clean_path
-        if clean_path and target_file.is_file():
-            ext = target_file.suffix.lower()
-            mime_types = {
-                ".html": "text/html; charset=utf-8",
-                ".js": "application/javascript; charset=utf-8",
-                ".mjs": "application/javascript; charset=utf-8",
-                ".css": "text/css; charset=utf-8",
-                ".svg": "image/svg+xml",
-                ".png": "image/png",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-                ".webp": "image/webp",
-                ".gif": "image/gif",
-                ".webm": "video/webm",
-                ".json": "application/json; charset=utf-8",
-                ".ico": "image/x-icon",
-                ".woff": "font/woff",
-                ".woff2": "font/woff2",
-                ".ttf": "font/ttf",
-            }
-            content_type = mime_types.get(ext, "application/octet-stream")
-            try:
-                with open(target_file, "rb") as f:
+            # Fallback SPA pour React Router / index.html
+            index_file = dist / "index.html"
+            if index_file.is_file():
+                with open(index_file, "rb") as f:
                     content = f.read()
                 self.send_response(200)
-                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(content)))
-                self.send_header("Cache-Control", "public, max-age=31536000" if "/assets/" in path else "no-cache")
+                self.send_header("Cache-Control", "no-cache")
                 self.end_headers()
                 self.wfile.write(content)
                 return
+
+            self.send_error(404, "Page introuvable")
+        except Exception as e:
+            print(f"[SERVER ERROR] Exception do_GET: {e}")
+            try:
+                self.send_response(500)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(f"Erreur interne: {e}".encode("utf-8"))
             except Exception:
                 pass
-
-        # Fallback SPA pour React Router / index.html
-        index_file = self.dist_dir / "index.html"
-        if index_file.is_file():
-            with open(index_file, "rb") as f:
-                content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(content)))
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
-            self.wfile.write(content)
-            return
-
-        self.send_error(404, "Page introuvable")
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
