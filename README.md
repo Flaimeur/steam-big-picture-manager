@@ -45,9 +45,15 @@ Une application de bureau ultra-moderne, réactive et fluide pour parcourir, té
   - Interface entièrement commutable entre Français et Anglais depuis les paramètres.
   - Sauvegarde instantanée de la langue préférée.
 
+- **🎵 Gestionnaire de Playlists & Rotations Thématiques** :
+  - Créez des playlists personnalisées (*ex: Cyberpunk, Rétro 90s, Anime, Calme, PlayStation*) pour classer vos animations.
+  - Ajoutez n'importe quelle vidéo à une ou plusieurs playlists en 1 clic.
+  - Lancez une rotation aléatoire instantanée restreinte à une playlist spécifique.
+  - Ciblez une playlist comme source de renouvellement pour l'Auto-Shuffle au démarrage.
+
 - **🎲 Rotation Aléatoire Avancée (Auto-Shuffle)** :
   - Activez la rotation automatique des animations au lancement.
-  - **Choix de la source** : tirez aléatoirement parmi **Toute votre collection** ou uniquement vos **Favoris**.
+  - **Choix de la source** : tirez aléatoirement parmi **Toute votre collection**, vos **Favoris**, ou une **Playlist thématique dédiée**.
   - **Choix de la cible** : renouvelez le **Démarrage (Boot)**, la **Mise en veille (Suspend)**, ou **Les deux simultanément**.
   - Bouton de tirage instantané en un clic.
 

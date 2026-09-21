@@ -14,6 +14,7 @@ import {
   Sparkles,
   Info,
   Languages,
+  ListMusic,
 } from 'lucide-react';
 
 export default function SettingsView({
@@ -26,6 +27,7 @@ export default function SettingsView({
   autoShuffle,
   onLaunchBigPicture,
   stats,
+  playlists = {},
   lang = 'fr',
   onLanguageChange,
   t,
@@ -283,12 +285,16 @@ export default function SettingsView({
                   </label>
                 </div>
 
-                {/* Source du tirage : Favoris vs Collection */}
+                {/* Source du tirage : Favoris vs Collection vs Playlist */}
                 <div className="space-y-2 pt-2 border-t border-[#1e293b]/60">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#94a3b8]">Source des animations</span>
                     <span className="text-[11px] text-[#546380]">
-                      {steamStatus?.shuffle_source === 'favorites' ? 'Seulement vos favoris' : 'Toutes vos vidéos'}
+                      {steamStatus?.shuffle_source === 'favorites'
+                        ? (lang === 'en' ? 'Favorites only' : 'Seulement vos favoris')
+                        : steamStatus?.shuffle_source?.startsWith('playlist:')
+                        ? (playlists[steamStatus.shuffle_source.replace('playlist:', '')]?.name || 'Playlist')
+                        : (lang === 'en' ? 'All collection' : 'Toutes vos vidéos')}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -296,13 +302,13 @@ export default function SettingsView({
                       type="button"
                       onClick={() => onToggleShuffle({ source: 'all' })}
                       className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                        steamStatus?.shuffle_source !== 'favorites'
+                        !steamStatus?.shuffle_source || steamStatus?.shuffle_source === 'all'
                           ? 'bg-[#1a2b4c] text-[#38bdf8] border-[#1a9fff]/50 shadow-sm shadow-[#1a9fff]/10'
                           : 'bg-[#0e1320] text-[#64748b] border-[#1e293b] hover:text-white'
                       }`}
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Toute la collection ({stats?.colCount || 0})</span>
+                      <span>{lang === 'en' ? 'Full Collection' : 'Toute la collection'} ({stats?.colCount || 0})</span>
                     </button>
                     <button
                       type="button"
@@ -313,9 +319,38 @@ export default function SettingsView({
                           : 'bg-[#0e1320] text-[#64748b] border-[#1e293b] hover:text-white'
                       }`}
                     >
-                      <span>⭐ Favoris uniquement ({stats?.favCount || 0})</span>
+                      <span>⭐ {lang === 'en' ? 'Favorites only' : 'Favoris uniquement'} ({stats?.favCount || 0})</span>
                     </button>
                   </div>
+
+                  {Object.keys(playlists).length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-[11px] font-semibold text-[#64748b] block mb-1.5">
+                        {lang === 'en' ? 'Or choose a specific playlist :' : 'Ou cibler une playlist :'}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.values(playlists).map((pl) => {
+                          const isPlSelected = steamStatus?.shuffle_source === `playlist:${pl.id}`;
+                          return (
+                            <button
+                              key={pl.id}
+                              type="button"
+                              onClick={() => onToggleShuffle({ source: `playlist:${pl.id}` })}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                                isPlSelected
+                                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-sm'
+                                  : 'bg-[#0e1320] text-[#64748b] border-[#1e293b] hover:text-white'
+                              }`}
+                            >
+                              <ListMusic className="w-3 h-3" />
+                              <span className="truncate max-w-[120px]">{pl.name}</span>
+                              <span className="text-[10px] opacity-70">({(pl.videos || []).length})</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Cible du tirage : Boot vs Veille vs Les deux */}

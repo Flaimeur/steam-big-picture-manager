@@ -102,6 +102,21 @@ export const translations = {
     importError: "Erreur lors de la conversion de la vidéo.",
     dragDropHere: "Glissez une vidéo ici ou cliquez pour parcourir",
     supportsFormat: "Formats supportés : MP4, MOV, MKV, WebM, GIF, AVI (max 150 Mo)",
+
+    // Playlists
+    tabPlaylists: "Playlists",
+    playlistsTitle: "Mes Playlists d'Animations",
+    createPlaylist: "Créer une playlist",
+    playlistName: "Nom de la playlist",
+    playlistDescription: "Description (optionnelle)",
+    playlistEmpty: "Cette playlist ne contient aucune animation pour le moment.",
+    addToPlaylist: "Ajouter à une playlist",
+    removeFromPlaylist: "Retirer de la playlist",
+    shufflePlaylist: "Tirer au sort dans cette Playlist",
+    deletePlaylistConfirm: "Supprimer la playlist '{name}' ?",
+    playlistCreated: "✔ Playlist '{name}' créée avec succès !",
+    playlistUpdated: "✔ Playlist mise à jour !",
+    playlistDeleted: "✔ Playlist supprimée.",
   },
 
   en: {
@@ -205,6 +220,21 @@ export const translations = {
     importError: "Error converting and importing video.",
     dragDropHere: "Drop your video here or click to browse",
     supportsFormat: "Supported formats: MP4, MOV, MKV, WebM, GIF, AVI (max 150 MB)",
+
+    // Playlists
+    tabPlaylists: "Playlists",
+    playlistsTitle: "My Animation Playlists",
+    createPlaylist: "Create Playlist",
+    playlistName: "Playlist Name",
+    playlistDescription: "Description (optional)",
+    playlistEmpty: "This playlist does not contain any animations yet.",
+    addToPlaylist: "Add to Playlist",
+    removeFromPlaylist: "Remove from Playlist",
+    shufflePlaylist: "Shuffle from this Playlist",
+    deletePlaylistConfirm: "Delete playlist '{name}'?",
+    playlistCreated: "✔ Playlist '{name}' created successfully!",
+    playlistUpdated: "✔ Playlist updated!",
+    playlistDeleted: "✔ Playlist deleted.",
   }
 };
 

@@ -325,6 +325,7 @@ class AppBackendHandler(BaseHTTPRequestHandler):
     cache_dir = appdata_dir / "cache"
     collection_file = appdata_dir / "collection.json"
     favorites_file = appdata_dir / "favorites.json"
+    playlists_file = appdata_dir / "playlists.json"
     settings_file = appdata_dir / "settings.json"
 
     def log_message(self, format, *args):
@@ -343,6 +344,8 @@ class AppBackendHandler(BaseHTTPRequestHandler):
             cls._write_json(cls.collection_file, {})
         if not cls.favorites_file.exists():
             cls._write_json(cls.favorites_file, {})
+        if not cls.playlists_file.exists():
+            cls._write_json(cls.playlists_file, {})
         if not cls.settings_file.exists():
             cls._write_json(cls.settings_file, {
                 "steam_path": SteamManager.detect_steam_path(),
@@ -435,17 +438,24 @@ class AppBackendHandler(BaseHTTPRequestHandler):
 
     @classmethod
     def perform_random_shuffle(cls, source: str = "all", target: str = "boot") -> dict:
-        """Tire et applique une vidéo aléatoire selon la source (all | favorites) et la cible (boot | suspend | both)."""
+        """Tire et applique une vidéo aléatoire selon la source (all | favorites | playlist:<id>) et la cible."""
         settings = cls._read_json(cls.settings_file)
         steam_p = settings.get("steam_path") or SteamManager.detect_steam_path()
         if not steam_p or not os.path.isdir(steam_p):
             return {"success": False, "error": "Dossier Steam introuvable"}
 
-        if source == "favorites":
+        if source.startswith("playlist:"):
+            pl_id = source.split(":", 1)[1]
+            playlists = cls._read_json(cls.playlists_file)
+            pl = playlists.get(pl_id, {})
+            candidates = list(pl.get("videos", []))
+            if not candidates:
+                col = cls._read_json(cls.collection_file)
+                candidates = list(col.values())
+        elif source == "favorites":
             favs = cls._read_json(cls.favorites_file)
             candidates = list(favs.values())
             if not candidates:
-                # Fallback sur collection si aucun favori
                 col = cls._read_json(cls.collection_file)
                 candidates = list(col.values())
         else:
@@ -574,6 +584,15 @@ class AppBackendHandler(BaseHTTPRequestHandler):
                     if isinstance(v, dict):
                         v["id"] = v.get("id") or k
                 self._send_json(favs)
+                return
+
+            # API: Playlists
+            elif path == "/api/playlists":
+                playlists = self._read_json(self.playlists_file)
+                for k, v in playlists.items():
+                    if isinstance(v, dict):
+                        v["id"] = v.get("id") or k
+                self._send_json(playlists)
                 return
 
             # Media local stream
@@ -806,6 +825,81 @@ class AppBackendHandler(BaseHTTPRequestHandler):
                 }
                 self._write_json(self.favorites_file, favs)
                 self._send_json({"success": True, "is_fav": True, "id": post_id})
+            return
+
+        # API: Playlists Create
+        elif path == "/api/playlists/create":
+            name = body.get("name") or "Ma Playlist"
+            desc = body.get("description", "")
+            pl_id = f"pl_{int(datetime.datetime.now().timestamp())}"
+            playlists = self._read_json(self.playlists_file)
+            playlists[pl_id] = {
+                "id": pl_id,
+                "name": name,
+                "description": desc,
+                "created_at": datetime.datetime.now().isoformat(),
+                "videos": []
+            }
+            self._write_json(self.playlists_file, playlists)
+            self._send_json({"success": True, "playlist": playlists[pl_id]})
+            return
+
+        # API: Playlists Add Video
+        elif path == "/api/playlists/add-video":
+            pl_id = str(body.get("playlist_id") or "")
+            video = body.get("video")
+            if not pl_id or not video:
+                self._send_json({"error": "Paramètres manquants"}, 400)
+                return
+            playlists = self._read_json(self.playlists_file)
+            if pl_id in playlists:
+                vid_id = str(video.get("id") or video.get("vid_id") or "")
+                existing_ids = [str(v.get("id") or v.get("vid_id") or "") for v in playlists[pl_id].get("videos", [])]
+                if vid_id not in existing_ids:
+                    playlists[pl_id].setdefault("videos", []).append(video)
+                    self._write_json(self.playlists_file, playlists)
+                self._send_json({"success": True, "playlist": playlists[pl_id]})
+            else:
+                self._send_json({"error": "Playlist introuvable"}, 404)
+            return
+
+        # API: Playlists Remove Video
+        elif path == "/api/playlists/remove-video":
+            pl_id = str(body.get("playlist_id") or "")
+            vid_id = str(body.get("video_id") or "")
+            playlists = self._read_json(self.playlists_file)
+            if pl_id in playlists:
+                playlists[pl_id]["videos"] = [
+                    v for v in playlists[pl_id].get("videos", [])
+                    if str(v.get("id") or v.get("vid_id") or "") != vid_id
+                ]
+                self._write_json(self.playlists_file, playlists)
+                self._send_json({"success": True, "playlist": playlists[pl_id]})
+            else:
+                self._send_json({"error": "Playlist introuvable"}, 404)
+            return
+
+        # API: Playlists Delete
+        elif path == "/api/playlists/delete":
+            pl_id = str(body.get("playlist_id") or "")
+            playlists = self._read_json(self.playlists_file)
+            if pl_id in playlists:
+                del playlists[pl_id]
+                self._write_json(self.playlists_file, playlists)
+                self._send_json({"success": True})
+            else:
+                self._send_json({"error": "Playlist introuvable"}, 404)
+            return
+
+        # API: Playlists Shuffle
+        elif path == "/api/playlists/shuffle":
+            pl_id = str(body.get("playlist_id") or "")
+            target = body.get("target", "boot")
+            result = self.perform_random_shuffle(source=f"playlist:{pl_id}", target=target)
+            if result.get("success"):
+                self._send_json(result)
+            else:
+                self._send_json({"error": result.get("error", "Erreur lors du tirage de playlist")}, 400)
             return
 
         # API: Apply Video to Steam

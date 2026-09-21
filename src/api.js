@@ -66,6 +66,14 @@ export const api = {
   getFavorites: () => fetchApi('/favorites'),
   toggleFavorite: (post) => fetchApi('/favorites/toggle', { method: 'POST', body: JSON.stringify(post) }),
 
+  // Playlists
+  getPlaylists: () => fetchApi('/playlists'),
+  createPlaylist: ({ name, description }) => fetchApi('/playlists/create', { method: 'POST', body: JSON.stringify({ name, description }) }),
+  addVideoToPlaylist: (playlistId, video) => fetchApi('/playlists/add-video', { method: 'POST', body: JSON.stringify({ playlist_id: playlistId, video }) }),
+  removeVideoFromPlaylist: (playlistId, videoId) => fetchApi('/playlists/remove-video', { method: 'POST', body: JSON.stringify({ playlist_id: playlistId, video_id: videoId }) }),
+  deletePlaylist: (playlistId) => fetchApi('/playlists/delete', { method: 'POST', body: JSON.stringify({ playlist_id: playlistId }) }),
+  shufflePlaylist: (playlistId, target = 'boot') => fetchApi('/playlists/shuffle', { method: 'POST', body: JSON.stringify({ playlist_id: playlistId, target }) }),
+
   // Application dans Steam
   applyVideo: ({ localFile, title, type, postId }) =>
     fetchApi('/steam/apply', {

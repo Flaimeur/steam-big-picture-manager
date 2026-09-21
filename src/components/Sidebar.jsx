@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Settings,
+  ListMusic,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -38,6 +39,7 @@ export default function Sidebar({
   const personalLinks = [
     { id: 'collection', label: t?.tabCollection || (lang === 'en' ? 'My Collection' : 'Ma Collection'), icon: Film, count: stats?.colCount },
     { id: 'favorites', label: t?.tabFavorites || (lang === 'en' ? 'My Favorites' : 'Mes Favoris'), icon: Star, count: stats?.favCount },
+    { id: 'playlists', label: t?.tabPlaylists || (lang === 'en' ? 'Playlists' : 'Playlists'), icon: ListMusic, count: stats?.plCount },
   ];
 
   const NavItem = ({ id, label, icon: Icon, count, onClick }) => {
