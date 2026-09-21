@@ -21,10 +21,10 @@ jobs:
             artifact_name: SteamBigPictureManager-Windows.exe
             sep: ';'
           - os: ubuntu-22.04
-            artifact_name: SteamBigPictureManager-Linux
+            artifact_name: SteamBigPictureManager-Linux.tar.gz
             sep: ':'
           - os: macos-latest
-            artifact_name: SteamBigPictureManager-macOS
+            artifact_name: SteamBigPictureManager-macOS.zip
             sep: ':'
 
     steps:
@@ -58,29 +58,75 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           python -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-Windows" --add-data "dist;dist" run_app.py
+          mkdir release_dist
+          copy dist\SteamBigPictureManager-Windows.exe release_dist\
 
       - name: Build Standalone Binary (Linux / Steam Deck)
         if: runner.os == 'Linux'
         run: |
           python3 -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-Linux" --add-data "dist:dist" run_app.py
           chmod +x dist/SteamBigPictureManager-Linux
-          tar -czvf dist/SteamBigPictureManager-Linux.tar.gz -C dist SteamBigPictureManager-Linux
+          mkdir release_dist
+          tar -czvf release_dist/SteamBigPictureManager-Linux.tar.gz -C dist SteamBigPictureManager-Linux
 
       - name: Build Standalone Binary (macOS)
         if: runner.os == 'macOS'
         run: |
           python3 -m PyInstaller --noconsole --onefile --clean --name="SteamBigPictureManager-macOS" --add-data "dist:dist" run_app.py
           chmod +x dist/SteamBigPictureManager-macOS
-          zip -j dist/SteamBigPictureManager-macOS.zip dist/SteamBigPictureManager-macOS
+          mkdir release_dist
+          zip -j release_dist/SteamBigPictureManager-macOS.zip dist/SteamBigPictureManager-macOS
 
-      - name: Upload Binaries to GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: dist/SteamBigPictureManager*
-          fail_on_unmatched_files: false
+          name: release-artifacts-${{ matrix.os }}
+          path: release_dist/*
+          retention-days: 1
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-artifacts-*
+          merge-multiple: true
+          path: release_files
+
+      - name: Publish Single Clean Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_files/*
           name: Release ${{ github.ref_name }} - Steam Big Picture Manager
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
+          body: |
+            ## 🎮 Steam Big Picture Manager - ${{ github.ref_name }}
 
+            Gestionnaire complet d'animations de démarrage (*Boot*) et de mise en veille (*Suspend*) pour **Steam Big Picture & Steam Deck**, connecté à **SteamDeckRepo**.
+
+            ---
+
+            ### 📥 Fichiers Téléchargeables
+
+            | Plateforme | Binaire / Archive | Description |
+            | :--- | :--- | :--- |
+            | **🪟 Windows** | `SteamBigPictureManager-Windows.exe` | Exécutable portable 1-clic (aucune installation requise) |
+            | **🐧 Linux / Steam Deck** | `SteamBigPictureManager-Linux.tar.gz` | Binaire autonome optimisé SteamOS & Linux Flatpak |
+            | **🍎 macOS** | `SteamBigPictureManager-macOS.zip` | Binaire autonome pour macOS |
+
+            ---
+
+            ### ✨ Principales Fonctionnalités
+            - 🎬 **Catalogue SteamDeckRepo intégré** avec prévisualisation vidéo 60 FPS.
+            - 🎲 **Auto-Shuffle avancé** : rotation automatique au démarrage parmi toute la collection ou les favoris.
+            - 🛡️ **Gestionnaire Steam Deck & PC** : sauvegarde automatique, restauration d'usine et verrouillage anti-écrasement.
+            - 🚀 **Zéro dépendance externe** : bundle complet autonome (UI React + backend Python embarqués).
