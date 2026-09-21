@@ -42,7 +42,7 @@ def launch_desktop_window(port):
     try:
         import webview
         webview.create_window(
-            title="Steam Big Picture Manager — Boot & Suspend Animations",
+            title="Steam Big Picture Manager",
             url=app_url,
             width=1280,
             height=840,
