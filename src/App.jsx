@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/Sidebar.jsx';
 import VideoGrid from './components/VideoGrid.jsx';
 import SettingsView from './components/SettingsView.jsx';
+import PlaylistsView from './components/PlaylistsView.jsx';
 import VideoPlayerModal from './components/VideoPlayerModal.jsx';
 import DetailModal from './components/DetailModal.jsx';
+import AddToPlaylistModal from './components/AddToPlaylistModal.jsx';
 import Toast from './components/Toast.jsx';
 import GamepadHintsBar from './components/GamepadHintsBar.jsx';
 import ImportModal from './components/ImportModal.jsx';
@@ -25,11 +27,13 @@ export default function App() {
   
   const [collection, setCollection] = useState({});
   const [favorites, setFavorites] = useState({});
+  const [playlists, setPlaylists] = useState({});
   const [steamStatus, setSteamStatus] = useState(null);
   const [autoShuffle, setAutoShuffle] = useState(false);
 
   const [activePlayerPost, setActivePlayerPost] = useState(null);
   const [activeDetailPost, setActiveDetailPost] = useState(null);
+  const [activeAddToPlaylistPost, setActiveAddToPlaylistPost] = useState(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -126,11 +130,21 @@ export default function App() {
     }
   }, []);
 
+  const refreshPlaylists = useCallback(async () => {
+    try {
+      const data = await api.getPlaylists();
+      setPlaylists(data && typeof data === 'object' ? data : {});
+    } catch (e) {
+      console.error('Erreur playlists:', e);
+    }
+  }, []);
+
   useEffect(() => {
     refreshStatus();
     refreshCollection();
     refreshFavorites();
-  }, [refreshStatus, refreshCollection, refreshFavorites]);
+    refreshPlaylists();
+  }, [refreshStatus, refreshCollection, refreshFavorites, refreshPlaylists]);
 
   const fetchCatalogPosts = useCallback(async () => {
     if (activeTab !== 'boot_video' && activeTab !== 'suspend_video') return;
@@ -244,6 +258,71 @@ export default function App() {
     }
   };
 
+  const handleCreatePlaylist = async (data) => {
+    try {
+      const res = await api.createPlaylist(data);
+      await refreshPlaylists();
+      showToast(t?.playlistCreated ? t.playlistCreated.replace('{name}', data.name) : `✔ Playlist '${data.name}' créée !`);
+      return res.playlist;
+    } catch (err) {
+      showToast(err.message || 'Erreur création playlist', 'error');
+      throw err;
+    }
+  };
+
+  const handleDeletePlaylist = async (id, name) => {
+    if (!window.confirm(t?.confirmDeletePlaylist ? t.confirmDeletePlaylist.replace('{name}', name) : `Supprimer la playlist '${name}' ?`)) return;
+    try {
+      await api.deletePlaylist(id);
+      await refreshPlaylists();
+      showToast(t?.playlistDeleted ? t.playlistDeleted.replace('{name}', name) : `✔ Playlist '${name}' supprimée.`);
+    } catch (err) {
+      showToast(err.message || 'Erreur suppression playlist', 'error');
+    }
+  };
+
+  const handleAddVideoToPlaylist = async (playlistId, post) => {
+    try {
+      await api.addVideoToPlaylist(playlistId, post);
+      await refreshPlaylists();
+      const plName = playlists[playlistId]?.name || 'Playlist';
+      showToast(t?.videoAddedToPl ? t.videoAddedToPl.replace('{title}', post.title || 'Vidéo').replace('{name}', plName) : `✔ Ajouté à '${plName}' !`);
+    } catch (err) {
+      showToast(err.message || 'Erreur ajout à la playlist', 'error');
+    }
+  };
+
+  const handleRemoveFromPlaylist = async (playlistId, videoId) => {
+    try {
+      await api.removeVideoFromPlaylist(playlistId, videoId);
+      await refreshPlaylists();
+      showToast(t?.videoRemovedFromPl || '✔ Vidéo retirée de la playlist.');
+    } catch (err) {
+      showToast(err.message || 'Erreur retrait de la playlist', 'error');
+    }
+  };
+
+  const handleCreateAndAdd = async (name, post) => {
+    try {
+      const pl = await handleCreatePlaylist({ name });
+      if (pl && pl.id) {
+        await handleAddVideoToPlaylist(pl.id, post);
+      }
+    } catch (err) {
+      // Handled in handleCreatePlaylist
+    }
+  };
+
+  const handleShufflePlaylist = async (playlistId, target = 'boot') => {
+    try {
+      const res = await api.shufflePlaylist(playlistId, target);
+      await refreshStatus();
+      showToast(t?.shuffleSuccess ? t.shuffleSuccess.replace('{title}', res.video?.title || 'Animation') : `🎲 '${res.video?.title || 'Animation'}' activée !`);
+    } catch (err) {
+      showToast(err.message || 'Erreur rotation de la playlist', 'error');
+    }
+  };
+
   const handlePickRandom = async (params = {}) => {
     try {
       const res = await api.pickRandom(params);
@@ -331,7 +410,7 @@ export default function App() {
 
   const [focusedIndex, setFocusedIndex] = useState(0);
 
-  const allTabs = ['boot_video', 'suspend_video', 'collection', 'favorites', 'settings'];
+  const allTabs = ['boot_video', 'suspend_video', 'collection', 'favorites', 'playlists', 'settings'];
 
   const getDisplayedItems = () => {
     if (activeTab === 'favorites') {
@@ -356,7 +435,7 @@ export default function App() {
 
   // Gamepad Directional Navigation
   const handleGamepadNavigate = useCallback((direction) => {
-    if (activePlayerPost || activeDetailPost) return;
+    if (activePlayerPost || activeDetailPost || activeAddToPlaylistPost) return;
     const count = displayedItems.length;
     if (count === 0) return;
 
@@ -375,11 +454,11 @@ export default function App() {
       }
       return next;
     });
-  }, [activePlayerPost, activeDetailPost, displayedItems.length]);
+  }, [activePlayerPost, activeDetailPost, activeAddToPlaylistPost, displayedItems.length]);
 
   // Gamepad Button A (Select / Open / Play)
   const handleButtonA = useCallback(() => {
-    if (activePlayerPost) return;
+    if (activePlayerPost || activeAddToPlaylistPost) return;
     if (activeDetailPost) {
       const post = activeDetailPost;
       setActiveDetailPost(null);
@@ -390,10 +469,14 @@ export default function App() {
     if (currentPost) {
       setActiveDetailPost(currentPost);
     }
-  }, [activePlayerPost, activeDetailPost, displayedItems, focusedIndex]);
+  }, [activePlayerPost, activeDetailPost, activeAddToPlaylistPost, displayedItems, focusedIndex]);
 
   // Gamepad Button B (Back / Close Modal)
   const handleButtonB = useCallback(() => {
+    if (activeAddToPlaylistPost) {
+      setActiveAddToPlaylistPost(null);
+      return;
+    }
     if (activePlayerPost) {
       setActivePlayerPost(null);
       return;
@@ -402,11 +485,11 @@ export default function App() {
       setActiveDetailPost(null);
       return;
     }
-    if (activeTab === 'settings') {
+    if (activeTab === 'settings' || activeTab === 'playlists') {
       setActiveTab('boot_video');
       setFocusedIndex(0);
     }
-  }, [activePlayerPost, activeDetailPost, activeTab]);
+  }, [activeAddToPlaylistPost, activePlayerPost, activeDetailPost, activeTab]);
 
   // Gamepad Button X (Toggle Favorite)
   const handleButtonX = useCallback(() => {
@@ -432,7 +515,7 @@ export default function App() {
 
   // Gamepad LB / RB (Tabs Switcher)
   const handleButtonLB = useCallback(() => {
-    if (activePlayerPost || activeDetailPost) return;
+    if (activePlayerPost || activeDetailPost || activeAddToPlaylistPost) return;
     setActiveTab((curr) => {
       const idx = allTabs.indexOf(curr);
       const prevIdx = idx <= 0 ? allTabs.length - 1 : idx - 1;
@@ -440,10 +523,10 @@ export default function App() {
     });
     setFocusedIndex(0);
     setPage(1);
-  }, [activePlayerPost, activeDetailPost]);
+  }, [activePlayerPost, activeDetailPost, activeAddToPlaylistPost]);
 
   const handleButtonRB = useCallback(() => {
-    if (activePlayerPost || activeDetailPost) return;
+    if (activePlayerPost || activeDetailPost || activeAddToPlaylistPost) return;
     setActiveTab((curr) => {
       const idx = allTabs.indexOf(curr);
       const nextIdx = idx >= allTabs.length - 1 ? 0 : idx + 1;
@@ -451,14 +534,14 @@ export default function App() {
     });
     setFocusedIndex(0);
     setPage(1);
-  }, [activePlayerPost, activeDetailPost]);
+  }, [activePlayerPost, activeDetailPost, activeAddToPlaylistPost]);
 
   // Gamepad Start / Menu (Settings toggle)
   const handleButtonStart = useCallback(() => {
-    if (activePlayerPost || activeDetailPost) return;
+    if (activePlayerPost || activeDetailPost || activeAddToPlaylistPost) return;
     setActiveTab((curr) => (curr === 'settings' ? 'boot_video' : 'settings'));
     setFocusedIndex(0);
-  }, [activePlayerPost, activeDetailPost]);
+  }, [activePlayerPost, activeDetailPost, activeAddToPlaylistPost]);
 
   // Gamepad Hook
   const { hasGamepad, isGamepadMode } = useGamepad({
@@ -482,6 +565,7 @@ export default function App() {
         stats={{
           favCount: Object.keys(favorites).length,
           colCount: Object.keys(collection).length,
+          plCount: Object.keys(playlists).length,
         }}
         onLaunchBigPicture={handleLaunchBigPicture}
         onPickRandom={handlePickRandom}
@@ -511,10 +595,31 @@ export default function App() {
             stats={{
               favCount: Object.keys(favorites).length,
               colCount: Object.keys(collection).length,
+              plCount: Object.keys(playlists).length,
             }}
+            playlists={playlists}
             lang={lang}
             onLanguageChange={handleLanguageChange}
             t={t}
+          />
+        ) : activeTab === 'playlists' ? (
+          <PlaylistsView
+            playlists={playlists}
+            collection={collection}
+            activeStatus={steamStatus}
+            isFavorite={isFavorite}
+            onPlay={setActivePlayerPost}
+            onOpenDetails={setActiveDetailPost}
+            onDownload={handleDownload}
+            onApply={handleApply}
+            onToggleFavorite={handleToggleFavorite}
+            onCreatePlaylist={handleCreatePlaylist}
+            onDeletePlaylist={handleDeletePlaylist}
+            onRemoveFromPlaylist={handleRemoveFromPlaylist}
+            onShufflePlaylist={handleShufflePlaylist}
+            t={t}
+            lang={lang}
+            isGamepadMode={isGamepadMode}
           />
         ) : (
           <VideoGrid
@@ -577,6 +682,17 @@ export default function App() {
         lang={lang}
       />
 
+      <AddToPlaylistModal
+        isOpen={Boolean(activeAddToPlaylistPost)}
+        onClose={() => setActiveAddToPlaylistPost(null)}
+        post={activeAddToPlaylistPost}
+        playlists={playlists}
+        onAddToPlaylist={handleAddVideoToPlaylist}
+        onCreateAndAdd={handleCreateAndAdd}
+        t={t}
+        lang={lang}
+      />
+
       <VideoPlayerModal
         post={activePlayerPost}
         isOpen={Boolean(activePlayerPost)}
@@ -601,6 +717,7 @@ export default function App() {
         onApply={handleApply}
         onToggleFavorite={handleToggleFavorite}
         onDelete={handleDeleteFromCollection}
+        onOpenAddToPlaylist={(post) => setActiveAddToPlaylistPost(post)}
         isFavorite={isFavorite}
       />
 

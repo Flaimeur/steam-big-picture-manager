@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Play, Download, Star, Check, ExternalLink, User, Heart, Clock, Trash2 } from 'lucide-react';
+import { X, Play, Download, Star, Check, ExternalLink, User, Heart, Clock, Trash2, ListMusic } from 'lucide-react';
 
 export default function DetailModal({
   post,
@@ -12,6 +12,7 @@ export default function DetailModal({
   onApply,
   onToggleFavorite,
   onDelete,
+  onOpenAddToPlaylist,
   isFavorite,
 }) {
   if (!isOpen || !post) return null;
@@ -162,6 +163,19 @@ export default function DetailModal({
                 title="Supprimer de la collection"
               >
                 <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {onOpenAddToPlaylist && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAddToPlaylist(post);
+                }}
+                className="p-2.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-400 hover:text-indigo-300 transition-all hover:scale-105"
+                title="Ajouter à une playlist"
+              >
+                <ListMusic className="w-4 h-4" />
               </button>
             )}
 
