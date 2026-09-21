@@ -30,6 +30,12 @@ Une application de bureau ultra-moderne, réactive et fluide pour parcourir, té
   - Pagination dynamique avec saisie directe du numéro de page.
   - Prévisualisation vidéo fluide 60 FPS avec son et fiches détaillées.
 
+- **🎮 Navigation Complète à la Manette (Gamepad Navigation)** :
+  - Pilotez toute l'interface depuis votre canapé sans souris ni clavier (Xbox, PlayStation DualShock/DualSense, Switch Pro, Steam Deck).
+  - Navigation spatiale 2D fluide avec D-pad et sticks, surbrillance dynamique et auto-scroll intelligent.
+  - Raccourcis physiques : `(A)` Sélectionner/Lire, `(B)` Retour/Fermer, `(X)` Favori, `(Y)` Appliquer à Steam, `(LB/RB)` Navigation par onglets.
+  - Barre d'aide manette HUD contextuelle en bas de l'écran.
+
 - **🌐 Support Multilingue (Français & English)** :
   - Interface entièrement commutable entre Français et Anglais depuis les paramètres.
   - Sauvegarde instantanée de la langue préférée.

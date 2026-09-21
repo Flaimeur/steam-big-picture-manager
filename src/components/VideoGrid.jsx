@@ -51,6 +51,8 @@ export default function VideoGrid({
   setSearchQuery,
   lang = 'fr',
   t,
+  focusedIndex = null,
+  isGamepadMode = false,
 }) {
   const [personalCategoryFilter, setPersonalCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,6 +79,16 @@ export default function VideoGrid({
   React.useEffect(() => {
     setInputPage(String(page));
   }, [page]);
+
+  React.useEffect(() => {
+    if (isGamepadMode && focusedIndex !== null && filteredPosts[focusedIndex]) {
+      const postId = String(filteredPosts[focusedIndex].id || filteredPosts[focusedIndex].vid_id);
+      const el = document.getElementById(`video-card-${postId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, [focusedIndex, isGamepadMode, filteredPosts]);
 
   const handlePageSubmit = (e) => {
     if (e) e.preventDefault();
@@ -424,7 +436,7 @@ export default function VideoGrid({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {filteredPosts.map((post) => {
+            {filteredPosts.map((post, idx) => {
               const postId = String(post.id || post.vid_id);
               const isInCol = Boolean(collection[postId]);
               const isBootActive = activeStatus?.boot_id === postId || activeStatus?.boot_title === post.title;
@@ -445,6 +457,7 @@ export default function VideoGrid({
                   onToggleFavorite={onToggleFavorite}
                   onDelete={onDelete}
                   isCollectionView={isCollectionView}
+                  isFocused={isGamepadMode && focusedIndex === idx}
                 />
               );
             })}

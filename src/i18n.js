@@ -79,6 +79,16 @@ export const translations = {
     toastDeleted: "✔ '{title}' supprimée de votre collection.",
     toastRestored: "✔ Vidéos d'origine de Steam restaurées.",
     toastSettingsSaved: "✔ Paramètres enregistrés avec succès.",
+
+    // Gamepad Navigation
+    gamepadSelect: "Sélectionner",
+    gamepadPlay: "Lire",
+    gamepadBack: "Retour",
+    gamepadFavorite: "Favori",
+    gamepadApply: "Appliquer",
+    gamepadTabs: "Onglets",
+    gamepadConnected: "Manette connectée",
+    gamepadDisconnected: "Manette déconnectée",
   },
 
   en: {
@@ -159,6 +169,16 @@ export const translations = {
     toastDeleted: "✔ '{title}' removed from collection.",
     toastRestored: "✔ Default Steam videos restored.",
     toastSettingsSaved: "✔ Settings saved successfully.",
+
+    // Gamepad Navigation
+    gamepadSelect: "Select",
+    gamepadPlay: "Play",
+    gamepadBack: "Back",
+    gamepadFavorite: "Favorite",
+    gamepadApply: "Apply",
+    gamepadTabs: "Tabs",
+    gamepadConnected: "Gamepad connected",
+    gamepadDisconnected: "Gamepad disconnected",
   }
 };
 
