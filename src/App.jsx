@@ -36,6 +36,31 @@ export default function App() {
 
   const debounceTimerRef = useRef(null);
 
+  // Heartbeat & Auto-Shutdown quand la fenêtre se ferme
+  useEffect(() => {
+    const sendPing = () => {
+      fetch('/api/heartbeat', { method: 'POST', keepalive: true }).catch(() => {});
+    };
+    sendPing();
+    const interval = setInterval(sendPing, 2000);
+
+    const onUnload = () => {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/shutdown');
+      } else {
+        fetch('/api/shutdown', { method: 'POST', keepalive: true }).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', onUnload);
+    window.addEventListener('pagehide', onUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('pagehide', onUnload);
+    };
+  }, []);
+
   // Debounce search
   useEffect(() => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);

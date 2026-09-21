@@ -31,6 +31,10 @@ if sys.platform == "win32":
 else:
     winreg = None
 
+# Heartbeat & Auto-Shutdown Watchdog (Arrêt automatique du process quand la fenêtre se ferme)
+LAST_HEARTBEAT_TIME = time.time()
+HAS_RECEIVED_HEARTBEAT = False
+
 
 def get_bundle_dir() -> Path:
     """Retourne le dossier contenant les assets (supporte PyInstaller _MEIPASS et dev)."""
@@ -396,8 +400,24 @@ class AppBackendHandler(BaseHTTPRequestHandler):
             path = parsed.path
             query = urllib.parse.parse_qs(parsed.query)
 
+            # API: Heartbeat & Shutdown
+            if path == "/api/heartbeat":
+                global LAST_HEARTBEAT_TIME, HAS_RECEIVED_HEARTBEAT
+                LAST_HEARTBEAT_TIME = time.time()
+                HAS_RECEIVED_HEARTBEAT = True
+                self._send_json({"ok": True})
+                return
+
+            elif path == "/api/shutdown":
+                self._send_json({"shutting_down": True})
+                def _exit_bg():
+                    time.sleep(0.15)
+                    os._exit(0)
+                threading.Thread(target=_exit_bg, daemon=True).start()
+                return
+
             # API: Status
-            if path == "/api/status":
+            elif path == "/api/status":
                 settings = self._read_json(self.settings_file)
                 steam_p = settings.get("steam_path") or SteamManager.detect_steam_path()
                 self._send_json({
@@ -536,8 +556,24 @@ class AppBackendHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+        # API: Heartbeat & Shutdown
+        if path == "/api/heartbeat":
+            global LAST_HEARTBEAT_TIME, HAS_RECEIVED_HEARTBEAT
+            LAST_HEARTBEAT_TIME = time.time()
+            HAS_RECEIVED_HEARTBEAT = True
+            self._send_json({"ok": True})
+            return
+
+        elif path == "/api/shutdown":
+            self._send_json({"shutting_down": True})
+            def _exit_bg():
+                time.sleep(0.15)
+                os._exit(0)
+            threading.Thread(target=_exit_bg, daemon=True).start()
+            return
+
         # API: Download to collection
-        if path == "/api/collection/download":
+        elif path == "/api/collection/download":
             post_id = str(body.get("id") or int(datetime.datetime.now().timestamp()))
             title = body.get("title", "Animation")
             video_url = body.get("video") or body.get("video_preview", "")
@@ -855,7 +891,25 @@ def start_server(port=5055, on_ready_callback=None):
         except Exception as e:
             print(f"[SHUFFLE] Erreur rotation au démarrage: {e}")
 
-    threading.Thread(target=_run_bg_shuffle, daemon=True).start()
+    # Surveillance de présence : arrêt automatique du backend quand l'interface est fermée
+    def _run_heartbeat_watchdog():
+        time.sleep(2.0)
+        start_time = time.time()
+        while True:
+            time.sleep(1.0)
+            now = time.time()
+            if HAS_RECEIVED_HEARTBEAT:
+                # Si le client connecté ne répond plus depuis plus de 4.5 secondes
+                if now - LAST_HEARTBEAT_TIME > 4.5:
+                    print("[WATCHDOG] Interface fermée. Arrêt propre du serveur.")
+                    os._exit(0)
+            else:
+                # Période de grâce au démarrage (30 secondes)
+                if now - start_time > 30.0:
+                    print("[WATCHDOG] Aucun client connecté après 30s. Arrêt du serveur.")
+                    os._exit(0)
+
+    threading.Thread(target=_run_heartbeat_watchdog, daemon=True).start()
 
     with httpd:
         httpd.serve_forever()
